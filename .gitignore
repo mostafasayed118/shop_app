@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Freebuff tool state (local session database — never commit)
+.freebuff/
