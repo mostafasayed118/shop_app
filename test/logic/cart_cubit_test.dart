@@ -77,6 +77,40 @@ void main() {
     );
 
     blocTest<CartCubit, CartState>(
+      'addItems merges quantities for existing products and appends new lines',
+      build: () => CartCubit(),
+      act: (cubit) {
+        cubit.addProduct(headphones, quantity: 2);
+        cubit.addItems(const [
+          CartItem(product: headphones, quantity: 1),
+          CartItem(product: tee, quantity: 3),
+        ]);
+      },
+      expect: () => [
+        const CartState(items: [CartItem(product: headphones, quantity: 2)]),
+        const CartState(items: [
+          CartItem(product: headphones, quantity: 3),
+          CartItem(product: tee, quantity: 3),
+        ]),
+      ],
+    );
+
+    blocTest<CartCubit, CartState>(
+      'addItems ignores zero-quantity lines and empty batches',
+      build: () => CartCubit(),
+      act: (cubit) {
+        cubit.addProduct(headphones);
+        cubit.addItems(const [
+          CartItem(product: tee, quantity: 0),
+        ]);
+        cubit.addItems(const []);
+      },
+      expect: () => [
+        const CartState(items: [CartItem(product: headphones, quantity: 1)]),
+      ],
+    );
+
+    blocTest<CartCubit, CartState>(
       'incrementQuantity and decrementQuantity adjust the line',
       build: () => CartCubit(),
       act: (cubit) {
@@ -159,6 +193,26 @@ void main() {
       expect(cubit.state.totalPrice, closeTo(2 * 249.99 + 3 * 24.99, 0.001));
 
       cubit.close();
+    });
+
+    test('addItems persists the merged batch as a single write', () async {
+      final repository = _InMemoryCartRepository();
+      final cubit = CartCubit(repository);
+      await pumpEventQueue();
+
+      cubit.addProduct(headphones, quantity: 2);
+      await pumpEventQueue();
+      cubit.addItems(const [
+        CartItem(product: headphones, quantity: 1),
+        CartItem(product: tee, quantity: 3),
+      ]);
+      await pumpEventQueue();
+
+      expect(repository.stored, const [
+        CartItem(product: headphones, quantity: 3),
+        CartItem(product: tee, quantity: 3),
+      ]);
+      await cubit.close();
     });
   });
 

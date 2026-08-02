@@ -2,6 +2,8 @@ import 'package:e_commerce/data/models/cart_item.dart';
 import 'package:e_commerce/data/models/order.dart';
 import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/repositories/orders_repository.dart';
+import 'package:e_commerce/logic/cart/cart_cubit.dart';
+import 'package:e_commerce/logic/cart/cart_state.dart';
 import 'package:e_commerce/ui/router/app_router.dart';
 import 'package:e_commerce/logic/orders/orders_cubit.dart';
 import 'package:e_commerce/main.dart';
@@ -26,9 +28,16 @@ const _headphones = Product(
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  Widget buildApp(OrdersCubit ordersCubit) {
+  Widget buildApp(
+    OrdersCubit ordersCubit, {
+    CartCubit? cartCubit,
+  }) {
     return MultiBlocProvider(
-      providers: [BlocProvider.value(value: ordersCubit)],
+      providers: [
+        BlocProvider.value(value: ordersCubit),
+        // The reorder action reads the cart, so the harness must provide it.
+        BlocProvider.value(value: cartCubit ?? CartCubit()),
+      ],
       // The order cards navigate through the app router, so the harness must
       // host a real GoRouter booting at the orders screen.
       child: MaterialApp.router(
@@ -99,6 +108,58 @@ void main() {
     expect(find.text('01/07/2026 · 2 items'), findsOneWidget);
     // For a single line the line total and grand total are the same amount.
     expect(find.text(r'$499.98'), findsWidgets);
+  });
+
+  testWidgets('reorder adds the snapshot items back to the cart', (
+    tester,
+  ) async {
+    const tee = Product(
+      id: '2',
+      name: 'Breeze Cotton Tee',
+      description: 'Cotton tee.',
+      price: 24.99,
+      imageAsset: 'assets/images/product_7.png',
+      category: 'Apparel',
+    );
+    final ordersCubit = OrdersCubit();
+    ordersCubit.recordOrder(
+      Order(
+        orderNumber: 'SH-123456',
+        placedAt: DateTime(2026, 7, 1),
+        items: const [
+          CartItem(product: _headphones, quantity: 2),
+          CartItem(product: tee, quantity: 1),
+        ],
+      ),
+    );
+    addTearDown(ordersCubit.close);
+
+    final cartCubit = CartCubit();
+    // An existing line for one of the ordered products: reordering must merge
+    // into it rather than duplicate the line.
+    cartCubit.addProduct(_headphones, quantity: 1);
+    addTearDown(cartCubit.close);
+
+    await tester.pumpWidget(
+      buildApp(ordersCubit, cartCubit: cartCubit),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reorder'));
+    await tester.pump();
+
+    // The headphones line merges (1 + 2) and the tee appends.
+    expect(cartCubit.state, const CartState(items: [
+      CartItem(product: _headphones, quantity: 3),
+      CartItem(product: tee, quantity: 1),
+    ]));
+    // Reorder gives toast feedback and stays on the history screen.
+    expect(find.text('3 items added to cart'), findsOneWidget);
+    expect(find.byType(OrderDetailScreen), findsNothing);
+
+    // Flush the snackbar timer before the test ends.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a completed checkout lands in order history', (tester) async {

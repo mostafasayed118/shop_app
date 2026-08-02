@@ -65,16 +65,33 @@ class CartCubit extends Cubit<CartState> {
   /// product is already in the cart.
   void addProduct(Product product, {int quantity = 1}) {
     if (quantity <= 0) return;
-    _mutated = true;
-    final items = List<CartItem>.of(state.items);
-    final index = items.indexWhere((item) => item.product.id == product.id);
-    if (index >= 0) {
-      final existing = items[index];
-      items[index] = existing.copyWith(quantity: existing.quantity + quantity);
-    } else {
-      items.add(CartItem(product: product, quantity: quantity));
+    addItems([CartItem(product: product, quantity: quantity)]);
+  }
+
+  /// Adds a batch of [items] (e.g. an order's snapshot lines when reordering)
+  /// in a single emit and persist. Lines for products already in the cart are
+  /// merged; zero-quantity lines are ignored.
+  void addItems(Iterable<CartItem> items) {
+    var changed = false;
+    final merged = List<CartItem>.of(state.items);
+    for (final incoming in items) {
+      if (incoming.quantity <= 0) continue;
+      final index = merged.indexWhere(
+        (item) => item.product.id == incoming.product.id,
+      );
+      if (index >= 0) {
+        final existing = merged[index];
+        merged[index] = existing.copyWith(
+          quantity: existing.quantity + incoming.quantity,
+        );
+      } else {
+        merged.add(incoming);
+      }
+      changed = true;
     }
-    emit(CartState(items: items));
+    if (!changed) return;
+    _mutated = true;
+    emit(CartState(items: merged));
     _persist();
   }
 

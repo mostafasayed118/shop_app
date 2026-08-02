@@ -4,15 +4,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/utils/strings.dart';
 import '../../data/models/order.dart';
+import '../../logic/cart/cart_cubit.dart';
 import '../../logic/orders/orders_cubit.dart';
 import '../../logic/orders/orders_state.dart';
+import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
 import '../widgets/status_view.dart';
 import '../widgets/surface_card.dart';
 
 /// Completed orders, most recent first. Each card summarizes the number,
-/// date, lines and total; history is a demo record, not a real fulfillment
-/// system.
+/// date, lines and total, and offers a one-tap reorder; history is a demo
+/// record, not a real fulfillment system.
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
@@ -42,10 +44,25 @@ class OrdersScreen extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends StatefulWidget {
   const _OrderCard({required this.order});
 
   final Order order;
+
+  @override
+  State<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<_OrderCard> with OwnedSnackBar<_OrderCard> {
+  Order get order => widget.order;
+
+  /// Re-adds the order's snapshot items to the cart. The snapshots are
+  /// self-contained (they embed the full product), so a reorder works even if
+  /// the catalogue has since changed or the product is no longer listed.
+  void _reorder() {
+    context.read<CartCubit>().addItems(order.items);
+    showOwnedToast('${pluralize(order.itemCount, 'item')} added to cart');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +128,19 @@ class _OrderCard extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: muted),
             ),
           ],
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Its own gesture recognizer wins over the card's InkWell, so
+              // tapping Reorder never opens the detail screen.
+              TextButton.icon(
+                onPressed: _reorder,
+                icon: const Icon(Icons.replay, size: 18),
+                label: const Text('Reorder'),
+              ),
+            ],
+          ),
         ],
       ),
     );
