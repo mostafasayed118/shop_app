@@ -1,0 +1,66 @@
+[
+  {
+    "id": "1",
+    "name": "Aurora Wireless Headphones",
+    "category": "Audio",
+    "price": 249.99,
+    "description": "Over-ear headphones with active noise cancellation and a 40-hour battery. Memory-foam cushions keep long listening sessions comfortable, and multipoint pairing lets you switch between laptop and phone without reconnecting.",
+    "imageAsset": "assets/images/product_1.png"
+  },
+  {
+    "id": "2",
+    "name": "Pulse Smartwatch",
+    "category": "Wearables",
+    "price": 199.99,
+    "description": "Track workouts, sleep and heart rate on a bright always-on AMOLED display. Water resistant to 5 ATM with a week of battery life on a single charge.",
+    "imageAsset": "assets/images/product_2.png"
+  },
+  {
+    "id": "3",
+    "name": "Strider Running Sneakers",
+    "category": "Footwear",
+    "price": 129.99,
+    "description": "Lightweight road runners with a responsive foam midsole and breathable engineered mesh upper. Designed for daily training on pavement and treadmill alike.",
+    "imageAsset": "assets/images/product_3.png"
+  },
+  {
+    "id": "4",
+    "name": "Nomad Everyday Backpack",
+    "category": "Bags",
+    "price": 89.99,
+    "description": "A 24L backpack with a padded 16-inch laptop sleeve, water-resistant shell and hidden anti-theft pocket. Ventilated straps make commutes and carry-ons comfortable.",
+    "imageAsset": "assets/images/product_4.png"
+  },
+  {
+    "id": "5",
+    "name": "Solstice Polarized Sunglasses",
+    "category": "Accessories",
+    "price": 59.99,
+    "description": "Polarized lenses cut glare while UV400 protection shields your eyes. The feather-light frame floats on the face and stays put through the active part of your day.",
+    "imageAsset": "assets/images/product_5.png"
+  },
+  {
+    "id": "6",
+    "name": "Lumina Instant Camera",
+    "category": "Electronics",
+    "price": 159.99,
+    "description": "Point, shoot and print credit-card sized photos in under a minute. Built-in selfie mirror, flash control and 10 prints per pack make it the life of any party.",
+    "imageAsset": "assets/images/product_6.png"
+  },
+  {
+    "id": "7",
+    "name": "Breeze Organic Cotton Tee",
+    "category": "Apparel",
+    "price": 24.99,
+    "description": "A relaxed-fit tee in 100% organic cotton with a pre-washed, no-shrink finish. Versatile enough for the office-casual dress code or the weekend.",
+    "imageAsset": "assets/images/product_7.png"
+  },
+  {
+    "id": "8",
+    "name": "Mechkey Mechanical Keyboard",
+    "category": "Electronics",
+    "price": 119.99,
+    "description": "Hot-swappable switches, per-key RGB and a CNC aluminium frame. USB-C and Bluetooth wireless let you float between desk setups with a single cable.",
+    "imageAsset": "assets/images/product_8.png"
+  }
+]
