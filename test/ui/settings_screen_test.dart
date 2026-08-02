@@ -1,3 +1,4 @@
+import 'package:e_commerce/data/models/currency.dart';
 import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/repositories/product_repository.dart';
 import 'package:e_commerce/data/models/cart_item.dart';
@@ -7,6 +8,7 @@ import 'package:e_commerce/logic/cart/cart_state.dart';
 import 'package:e_commerce/logic/orders/orders_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
 import 'package:e_commerce/logic/products/products_state.dart';
+import 'package:e_commerce/logic/settings/settings_cubit.dart';
 import 'package:e_commerce/logic/theme/theme_cubit.dart';
 import 'package:e_commerce/logic/wishlist/wishlist_cubit.dart';
 import 'package:e_commerce/ui/router/app_router.dart';
@@ -65,6 +67,7 @@ void main() {
     required CartCubit cartCubit,
     WishlistCubit? wishlistCubit,
     OrdersCubit? ordersCubit,
+    SettingsCubit? settingsCubit,
   }) {
     return MultiBlocProvider(
       providers: [
@@ -73,6 +76,7 @@ void main() {
         BlocProvider.value(value: cartCubit),
         BlocProvider.value(value: wishlistCubit ?? WishlistCubit()),
         BlocProvider.value(value: ordersCubit ?? OrdersCubit()),
+        BlocProvider.value(value: settingsCubit ?? SettingsCubit()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         // Hosted on the real router so the order-history tile's `context.push`
@@ -94,6 +98,47 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
   }
+
+  testWidgets('currency selector switches the display currency and persists', (
+    tester,
+  ) async {
+    // A phone-width viewport: the four currency segments must fit without
+    // overflowing (the theme control proves three at this width; four short
+    // ISO codes must too).
+    tester.view.physicalSize = const Size(390, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final settingsCubit = SettingsCubit();
+    addTearDown(settingsCubit.close);
+
+    await tester.pumpWidget(
+      buildApp(
+        themeCubit: ThemeCubit(),
+        productsCubit: await loadProducts(),
+        cartCubit: CartCubit(),
+        settingsCubit: settingsCubit,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The four segments render without a RenderFlex overflow.
+    expect(tester.takeException(), isNull);
+    for (final code in ['USD', 'EUR', 'GBP', 'JPY']) {
+      expect(find.text(code), findsOneWidget);
+    }
+
+    // Default is USD; picking EUR lands on the cubit.
+    expect(settingsCubit.state, Currency.usd);
+    await tester.tap(find.text('EUR'));
+    await tester.pumpAndSettle();
+    expect(settingsCubit.state, Currency.eur);
+
+    // Switching back to USD works too.
+    await tester.tap(find.text('USD'));
+    await tester.pumpAndSettle();
+    expect(settingsCubit.state, Currency.usd);
+  });
 
   testWidgets('theme selector switches the app theme and persists', (
     tester,
@@ -267,11 +312,14 @@ void main() {
         items: const [CartItem(product: _product, quantity: 1)],
       ),
     );
+    final settingsCubit = SettingsCubit();
+    settingsCubit.setCurrency(Currency.eur);
     addTearDown(themeCubit.close);
     addTearDown(productsCubit.close);
     addTearDown(cartCubit.close);
     addTearDown(wishlistCubit.close);
     addTearDown(ordersCubit.close);
+    addTearDown(settingsCubit.close);
 
     await tester.pumpWidget(
       buildApp(
@@ -280,6 +328,7 @@ void main() {
         cartCubit: cartCubit,
         wishlistCubit: wishlistCubit,
         ordersCubit: ordersCubit,
+        settingsCubit: settingsCubit,
       ),
     );
     await tester.pumpAndSettle();
@@ -296,6 +345,7 @@ void main() {
     expect(ordersCubit.state.orders, hasLength(1));
     expect((productsCubit.state as ProductsLoaded).query, '');
     expect(themeCubit.state, ThemeMode.system);
+    expect(settingsCubit.state, Currency.usd);
     expect(find.text('All data reset'), findsOneWidget);
     // The order-history tile still shows the surviving order.
     expect(find.text('1 order'), findsOneWidget);
@@ -322,6 +372,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
           BlocProvider(create: (_) => OrdersCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         // The gear button navigates through the app router, so the harness
         // must host the real GoRouter (not a bare MaterialApp).

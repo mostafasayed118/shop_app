@@ -3,12 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/strings.dart';
+import '../../data/models/currency.dart';
 import '../../logic/cart/cart_cubit.dart';
 import '../../logic/cart/cart_state.dart';
 import '../../logic/orders/orders_cubit.dart';
 import '../../logic/orders/orders_state.dart';
 import '../../logic/products/products_cubit.dart';
 import '../../logic/products/products_state.dart';
+import '../../logic/settings/settings_cubit.dart';
 import '../../logic/theme/theme_cubit.dart';
 import '../../logic/wishlist/wishlist_cubit.dart';
 import '../widgets/owned_snack_bar.dart';
@@ -95,9 +97,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     final confirmed = await _confirm(
       title: 'Reset all data?',
       message:
-          'This clears your cart and wishlist, resets saved catalogue filters '
-          'and returns to the system theme. Your order history is kept. '
-          'It cannot be undone.',
+          'This clears your cart and wishlist, resets saved catalogue filters, '
+          'returns to the system theme and default currency. Your order '
+          'history is kept. It cannot be undone.',
       confirmLabel: 'Reset all',
       destructive: true,
     );
@@ -106,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     context.read<WishlistCubit>().clear();
     context.read<ProductsCubit>().resetCataloguePreferences();
     context.read<ThemeCubit>().setThemeMode(ThemeMode.system);
+    context.read<SettingsCubit>().setCurrency(Currency.usd);
     showOwnedToast('All data reset');
   }
 
@@ -118,6 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           const _SectionHeader('Appearance'),
           _ThemeCard(),
+          const SizedBox(height: 12),
+          const _CurrencyCard(),
           const SizedBox(height: 24),
           const _SectionHeader('Catalogue'),
           _CatalogueCard(onResetFilters: _resetFilters),
@@ -192,6 +197,39 @@ class _ThemeCard extends StatelessWidget {
           selected: {mode},
           onSelectionChanged: (selection) =>
               context.read<ThemeCubit>().setThemeMode(selection.first),
+        ),
+      ),
+    );
+  }
+}
+
+/// Currency selector, backed by the shared [SettingsCubit] so every price in
+/// the app re-renders when the choice changes.
+class _CurrencyCard extends StatelessWidget {
+  const _CurrencyCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      padding: const EdgeInsets.all(12),
+      child: BlocBuilder<SettingsCubit, Currency>(
+        builder: (context, currency) => SegmentedButton<Currency>(
+          // Fill the card edge to edge instead of hugging the content.
+          expandedInsets: EdgeInsets.zero,
+          showSelectedIcon: false,
+          // Segments are derived from the enum (not hardcoded) so the code
+          // doubles as the visible label and the full name as a tooltip.
+          segments: [
+            for (final c in Currency.values)
+              ButtonSegment(
+                value: c,
+                label: Text(c.code),
+                tooltip: c.label,
+              ),
+          ],
+          selected: {currency},
+          onSelectionChanged: (selection) =>
+              context.read<SettingsCubit>().setCurrency(selection.first),
         ),
       ),
     );
@@ -285,7 +323,7 @@ class _DataCard extends StatelessWidget {
               leading: const Icon(Icons.delete_forever_outlined),
               title: const Text('Reset all data'),
               subtitle: const Text(
-                'Clears cart, wishlist, saved filters and theme',
+                'Clears cart, wishlist, filters, theme and currency',
               ),
               onTap: onResetAll,
             ),

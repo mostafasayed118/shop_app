@@ -4,8 +4,9 @@ import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/repositories/orders_repository.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
 import 'package:e_commerce/logic/cart/cart_state.dart';
-import 'package:e_commerce/ui/router/app_router.dart';
 import 'package:e_commerce/logic/orders/orders_cubit.dart';
+import 'package:e_commerce/logic/settings/settings_cubit.dart';
+import 'package:e_commerce/ui/router/app_router.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/screens/checkout_success_screen.dart';
 import 'package:e_commerce/ui/screens/order_detail_screen.dart';
@@ -37,6 +38,8 @@ void main() {
         BlocProvider.value(value: ordersCubit),
         // The reorder action reads the cart, so the harness must provide it.
         BlocProvider.value(value: cartCubit ?? CartCubit()),
+        // Prices read the display currency from settings.
+        BlocProvider(create: (_) => SettingsCubit()),
       ],
       // The order cards navigate through the app router, so the harness must
       // host a real GoRouter booting at the orders screen.

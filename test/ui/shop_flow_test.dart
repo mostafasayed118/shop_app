@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
 import 'package:e_commerce/logic/theme/theme_cubit.dart';
+import 'package:e_commerce/logic/settings/settings_cubit.dart';
 import 'package:e_commerce/logic/wishlist/wishlist_cubit.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/screens/cart_screen.dart';
@@ -202,6 +203,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -230,6 +232,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -292,6 +295,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -319,6 +323,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -368,6 +373,7 @@ void main() {
             BlocProvider(create: (_) => CartCubit()),
             BlocProvider(create: (_) => ThemeCubit()),
             BlocProvider(create: (_) => WishlistCubit()),
+            BlocProvider(create: (_) => SettingsCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -413,6 +419,7 @@ void main() {
             BlocProvider(create: (_) => CartCubit()),
             BlocProvider(create: (_) => ThemeCubit()),
             BlocProvider(create: (_) => WishlistCubit()),
+            BlocProvider(create: (_) => SettingsCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -469,6 +476,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -517,6 +525,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -557,6 +566,7 @@ void main() {
           BlocProvider.value(value: cartCubit),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
       child: MaterialApp(theme: buildShopTheme(), home: const ProductsScreen()),
     );
@@ -594,7 +604,10 @@ void main() {
 
     await tester.pumpWidget(
       MultiBlocProvider(
-        providers: [BlocProvider.value(value: cartCubit)],
+        providers: [
+          BlocProvider.value(value: cartCubit),
+          BlocProvider(create: (_) => SettingsCubit()),
+        ],
         child: MaterialApp(theme: buildShopTheme(), home: const CartScreen()),
       ),
     );
@@ -626,7 +639,10 @@ void main() {
 
     await tester.pumpWidget(
       MultiBlocProvider(
-        providers: [BlocProvider.value(value: cartCubit)],
+        providers: [
+          BlocProvider.value(value: cartCubit),
+          BlocProvider(create: (_) => SettingsCubit()),
+        ],
         child: MaterialApp(theme: buildShopTheme(), home: const CartScreen()),
       ),
     );
@@ -662,6 +678,7 @@ void main() {
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => WishlistCubit()),
+          BlocProvider(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),

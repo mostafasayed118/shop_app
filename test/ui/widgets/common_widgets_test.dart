@@ -1,5 +1,7 @@
+import 'package:e_commerce/data/models/currency.dart';
 import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/models/product_sort.dart';
+import 'package:e_commerce/logic/settings/settings_cubit.dart';
 import 'package:e_commerce/ui/widgets/bottom_action_bar.dart';
 import 'package:e_commerce/ui/widgets/category_chips.dart';
 import 'package:e_commerce/ui/widgets/circle_icon.dart';
@@ -9,6 +11,7 @@ import 'package:e_commerce/ui/widgets/search_field.dart';
 import 'package:e_commerce/ui/widgets/sort_control.dart';
 import 'package:e_commerce/ui/widgets/surface_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -121,12 +124,39 @@ void main() {
   });
 
   group('PriceText', () {
-    testWidgets('formats the amount and applies a color', (tester) async {
-      await tester.pumpWidget(wrap(PriceText(1299.5, color: Colors.red)));
+    testWidgets('formats the amount in the app currency and applies a color', (
+      tester,
+    ) async {
+      // PriceText reads the display currency from SettingsCubit, so the
+      // harness must provide it.
+      await tester.pumpWidget(
+        BlocProvider(
+          create: (_) => SettingsCubit(),
+          child: wrap(PriceText(1299.5, color: Colors.red)),
+        ),
+      );
 
       expect(find.text(r'$1,299.50'), findsOneWidget);
       final text = tester.widget<Text>(find.byType(Text));
       expect(text.style?.color, Colors.red);
+    });
+
+    testWidgets('re-renders in the selected currency', (tester) async {
+      final settingsCubit = SettingsCubit();
+      addTearDown(settingsCubit.close);
+
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: settingsCubit,
+          child: wrap(PriceText(1299.5)),
+        ),
+      );
+      expect(find.text(r'$1,299.50'), findsOneWidget);
+
+      // Switching currency live-rebuilds the price.
+      settingsCubit.setCurrency(Currency.eur);
+      await tester.pumpAndSettle();
+      expect(find.text('€1,299.50'), findsOneWidget);
     });
   });
 

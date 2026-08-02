@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/money.dart';
 import '../../core/utils/strings.dart';
 import '../../data/models/order.dart';
+import '../../logic/settings/settings_cubit.dart';
 import '../widgets/circle_icon.dart';
 
 /// Route input contract for the checkout-success route. The cart is cleared
@@ -62,7 +64,7 @@ class CheckoutSuccessScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '${pluralize(order.itemCount, 'item')} · '
-                '${formatPrice(order.total)}',
+                '${formatPrice(order.total, currency: context.watch<SettingsCubit>().state)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

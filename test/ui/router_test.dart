@@ -6,6 +6,7 @@ import 'package:e_commerce/data/repositories/product_repository.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
 import 'package:e_commerce/logic/orders/orders_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
+import 'package:e_commerce/logic/settings/settings_cubit.dart';
 import 'package:e_commerce/logic/theme/theme_cubit.dart';
 import 'package:e_commerce/logic/wishlist/wishlist_cubit.dart';
 import 'package:e_commerce/main.dart';
@@ -161,6 +162,7 @@ void main() {
         BlocProvider(create: (_) => CartCubit()),
         BlocProvider(create: (_) => WishlistCubit()),
         BlocProvider.value(value: ordersCubit ?? OrdersCubit()),
+        BlocProvider(create: (_) => SettingsCubit()),
       ],
       child: MaterialApp.router(
         routerConfig: createAppRouter(initialLocation: initialLocation),

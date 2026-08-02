@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/money.dart';
 import '../../core/utils/strings.dart';
 import '../../data/models/cart_item.dart';
 import '../../data/models/order.dart';
+import '../../logic/settings/settings_cubit.dart';
 import '../widgets/order_reorder.dart';
 import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
@@ -153,7 +155,8 @@ class _OrderLine extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${item.quantity} × ${formatPrice(item.product.price)}',
+                  '${item.quantity} × '
+                  '${formatPrice(item.product.price, currency: context.watch<SettingsCubit>().state)}',
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
               ],
