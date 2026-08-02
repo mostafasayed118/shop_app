@@ -7,3 +7,11 @@ String pluralize(int count, String noun, {String? plural}) {
   if (count == 1) return '$count $noun';
   return '$count ${plural ?? '${noun}s'}';
 }
+
+/// Formats [date] as `dd/MM/yyyy`, e.g. the 1st of July 2026 → `"01/07/2026"`.
+/// Dependency-free: `intl` would be overkill for a single short format.
+String formatShortDate(DateTime date) {
+  return '${date.day.toString().padLeft(2, '0')}/'
+      '${date.month.toString().padLeft(2, '0')}/'
+      '${date.year}';
+}

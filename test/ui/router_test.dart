@@ -1,6 +1,10 @@
+import 'package:e_commerce/data/models/cart_item.dart';
+import 'package:e_commerce/data/models/order.dart';
 import 'package:e_commerce/data/models/product.dart';
+import 'package:e_commerce/data/repositories/orders_repository.dart';
 import 'package:e_commerce/data/repositories/product_repository.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
+import 'package:e_commerce/logic/orders/orders_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
 import 'package:e_commerce/logic/theme/theme_cubit.dart';
 import 'package:e_commerce/logic/wishlist/wishlist_cubit.dart';
@@ -8,6 +12,7 @@ import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/router/app_router.dart';
 import 'package:e_commerce/ui/screens/cart_screen.dart';
 import 'package:e_commerce/ui/screens/not_found_screen.dart';
+import 'package:e_commerce/ui/screens/order_detail_screen.dart';
 import 'package:e_commerce/ui/screens/product_detail_screen.dart';
 import 'package:e_commerce/ui/screens/products_screen.dart';
 import 'package:e_commerce/ui/theme/app_theme.dart';
@@ -81,6 +86,25 @@ class _RetryRepository extends ProductRepository {
   }
 }
 
+/// Orders repository whose restore takes a beat, so a deep link can arrive
+/// while the history is still loading — the race the resolver must survive.
+class _SlowOrdersRepository extends OrdersRepository {
+  @override
+  Future<List<Order>> loadOrders() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return [
+      Order(
+        orderNumber: 'SH-7',
+        placedAt: DateTime(2026, 7, 1),
+        items: const [CartItem(product: _headphones, quantity: 1)],
+      ),
+    ];
+  }
+
+  @override
+  Future<void> saveOrders(List<Order> orders) async {}
+}
+
 class _InstantRepository extends ProductRepository {
   @override
   Future<List<Product>> getProducts() async => const [
@@ -103,6 +127,15 @@ class _InstantRepository extends ProductRepository {
   ];
 }
 
+const _headphones = Product(
+  id: '1',
+  name: 'Aurora Wireless Headphones',
+  description: 'Over-ear headphones.',
+  price: 249.99,
+  imageAsset: 'assets/images/product_1.png',
+  category: 'Audio',
+);
+
 void main() {
   // The ShopApp-level test wires real persistence repositories, which read
   // SharedPreferences — tests mock the store.
@@ -116,13 +149,18 @@ void main() {
 
   /// Hosts the real router over the three cubits, starting at
   /// [initialLocation] so a test can boot straight into a deep link.
-  Widget buildApp(ProductsCubit productsCubit, {String initialLocation = '/'}) {
+  Widget buildApp(
+    ProductsCubit productsCubit, {
+    String initialLocation = '/',
+    OrdersCubit? ordersCubit,
+  }) {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: productsCubit),
         BlocProvider(create: (_) => ThemeCubit()),
         BlocProvider(create: (_) => CartCubit()),
         BlocProvider(create: (_) => WishlistCubit()),
+        BlocProvider.value(value: ordersCubit ?? OrdersCubit()),
       ],
       child: MaterialApp.router(
         routerConfig: createAppRouter(initialLocation: initialLocation),
@@ -239,6 +277,85 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ProductDetailScreen), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
+    },
+  );
+
+  testWidgets('deep link to /orders/:number opens the order detail', (
+    tester,
+  ) async {
+    final ordersCubit = OrdersCubit();
+    ordersCubit.recordOrder(
+      Order(
+        orderNumber: 'SH-7',
+        placedAt: DateTime(2026, 7, 1),
+        items: const [CartItem(product: _headphones, quantity: 1)],
+      ),
+    );
+    addTearDown(ordersCubit.close);
+    final productsCubit = await loadProducts();
+    addTearDown(productsCubit.close);
+
+    await tester.pumpWidget(
+      buildApp(
+        productsCubit,
+        ordersCubit: ordersCubit,
+        initialLocation: '/orders/SH-7',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(OrderDetailScreen), findsOneWidget);
+    expect(find.text('SH-7'), findsOneWidget);
+  });
+
+  testWidgets('deep link to an unknown order number shows not found', (
+    tester,
+  ) async {
+    final ordersCubit = OrdersCubit();
+    addTearDown(ordersCubit.close);
+    final productsCubit = await loadProducts();
+    addTearDown(productsCubit.close);
+
+    await tester.pumpWidget(
+      buildApp(
+        productsCubit,
+        ordersCubit: ordersCubit,
+        initialLocation: '/orders/UNKNOWN',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(NotFoundScreen), findsOneWidget);
+  });
+
+  testWidgets(
+    'a deep link arriving while orders restore waits, then resolves',
+    (tester) async {
+      // The history is deliberately NOT restored yet when the deep link
+      // boots: the resolver must show a spinner, not "not found".
+      final ordersCubit = OrdersCubit(_SlowOrdersRepository());
+      addTearDown(ordersCubit.close);
+      final productsCubit = await loadProducts();
+      addTearDown(productsCubit.close);
+
+      await tester.pumpWidget(
+        buildApp(
+          productsCubit,
+          ordersCubit: ordersCubit,
+          initialLocation: '/orders/SH-7',
+        ),
+      );
+      // A single frame only: the resolver's spinner animates forever, so
+      // pumpAndSettle would time out while it's on screen.
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(OrderDetailScreen), findsNothing);
+      expect(find.byType(NotFoundScreen), findsNothing);
+
+      // The restore lands; the resolver swaps the spinner for the detail.
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpAndSettle();
+      expect(find.byType(OrderDetailScreen), findsOneWidget);
+      expect(find.text('SH-7'), findsOneWidget);
+      expect(find.byType(NotFoundScreen), findsNothing);
     },
   );
 

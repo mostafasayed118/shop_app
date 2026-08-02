@@ -1,9 +1,12 @@
 import 'package:go_router/go_router.dart';
 
+import '../../data/models/order.dart';
 import '../../data/models/product.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_success_screen.dart';
 import '../screens/not_found_screen.dart';
+import '../screens/order_detail_screen.dart';
+import '../screens/order_resolver_screen.dart';
 import '../screens/orders_screen.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/product_resolver_screen.dart';
@@ -48,6 +51,23 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
       GoRoute(
         path: '/orders',
         builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: '/orders/:orderNumber',
+        builder: (context, state) {
+          // In-app navigation passes the full order via `extra`; a deep link
+          // has no extra and resolves the number from the restored history
+          // (waiting for the restore rather than failing early).
+          final extra = state.extra;
+          if (extra is Order) return OrderDetailScreen(order: extra);
+          final number = state.pathParameters['orderNumber'];
+          if (number == null) {
+            return NotFoundScreen(
+              message: 'That order isn\u2019t in your history.',
+            );
+          }
+          return OrderResolverScreen(orderNumber: number);
+        },
       ),
       GoRoute(
         path: '/settings',

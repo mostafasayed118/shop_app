@@ -2,9 +2,11 @@ import 'package:e_commerce/data/models/cart_item.dart';
 import 'package:e_commerce/data/models/order.dart';
 import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/repositories/orders_repository.dart';
+import 'package:e_commerce/ui/router/app_router.dart';
 import 'package:e_commerce/logic/orders/orders_cubit.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/screens/checkout_success_screen.dart';
+import 'package:e_commerce/ui/screens/order_detail_screen.dart';
 import 'package:e_commerce/ui/screens/orders_screen.dart';
 import 'package:e_commerce/ui/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,12 @@ void main() {
   Widget buildApp(OrdersCubit ordersCubit) {
     return MultiBlocProvider(
       providers: [BlocProvider.value(value: ordersCubit)],
-      child: MaterialApp(theme: buildShopTheme(), home: const OrdersScreen()),
+      // The order cards navigate through the app router, so the harness must
+      // host a real GoRouter booting at the orders screen.
+      child: MaterialApp.router(
+        routerConfig: createAppRouter(initialLocation: '/orders'),
+        theme: buildShopTheme(),
+      ),
     );
   }
 
@@ -64,6 +71,34 @@ void main() {
     expect(find.text('2 items'), findsOneWidget);
     expect(find.text(r'$499.98'), findsOneWidget);
     expect(find.text('Aurora Wireless Headphones ×2'), findsOneWidget);
+  });
+
+  testWidgets('tapping an order card opens its detail with line items', (
+    tester,
+  ) async {
+    final ordersCubit = OrdersCubit();
+    ordersCubit.recordOrder(
+      Order(
+        orderNumber: 'SH-123456',
+        placedAt: DateTime(2026, 7, 1),
+        items: const [CartItem(product: _headphones, quantity: 2)],
+      ),
+    );
+    addTearDown(ordersCubit.close);
+
+    await tester.pumpWidget(buildApp(ordersCubit));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('SH-123456'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OrderDetailScreen), findsOneWidget);
+    expect(find.text('Aurora Wireless Headphones'), findsOneWidget);
+    expect(find.text(r'2 × $249.99'), findsOneWidget);
+    // The header combines the date and item count in a single Text.
+    expect(find.text('01/07/2026 · 2 items'), findsOneWidget);
+    // For a single line the line total and grand total are the same amount.
+    expect(find.text(r'$499.98'), findsWidgets);
   });
 
   testWidgets('a completed checkout lands in order history', (tester) async {

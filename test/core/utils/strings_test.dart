@@ -18,4 +18,11 @@ void main() {
       expect(pluralize(1, 'box', plural: 'boxes'), '1 box');
     });
   });
+
+  group('formatShortDate', () {
+    test('formats as zero-padded dd/MM/yyyy', () {
+      expect(formatShortDate(DateTime(2026, 7, 1)), '01/07/2026');
+      expect(formatShortDate(DateTime(2026, 12, 31)), '31/12/2026');
+    });
+  });
 }

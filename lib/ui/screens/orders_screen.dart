@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/utils/strings.dart';
 import '../../data/models/order.dart';
@@ -46,15 +47,6 @@ class _OrderCard extends StatelessWidget {
 
   final Order order;
 
-  /// dd/MM/yyyy — kept local and dependency-free (intl would be overkill for
-  /// a single list).
-  String get _dateLabel {
-    final date = order.placedAt;
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -64,6 +56,9 @@ class _OrderCard extends StatelessWidget {
 
     return SurfaceCard(
       padding: const EdgeInsets.all(16),
+      // The full order rides along as `extra`; the route falls back to an
+      // order-number lookup for deep links.
+      onTap: () => context.push('/orders/${order.orderNumber}', extra: order),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -92,7 +87,7 @@ class _OrderCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                _dateLabel,
+                formatShortDate(order.placedAt),
                 style: theme.textTheme.bodySmall?.copyWith(color: muted),
               ),
               const SizedBox(width: 8),

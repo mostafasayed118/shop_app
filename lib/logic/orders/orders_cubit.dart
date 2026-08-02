@@ -15,7 +15,11 @@ import 'orders_state.dart';
 class OrdersCubit extends Cubit<OrdersState> {
   // Positional-optional so the private field can be an initializing formal
   // (a private *named* parameter would be unusable from other libraries).
-  OrdersCubit([this._repository]) : super(const OrdersState()) {
+  // Without a repository there's nothing to restore, so the state starts
+  // "restored"; with one it starts un-restored until [OrdersState.restored]
+  // flips — letting deep links wait instead of wrongly showing not-found.
+  OrdersCubit([this._repository])
+      : super(OrdersState(restored: _repository == null)) {
     _restore();
   }
 
@@ -35,11 +39,15 @@ class OrdersCubit extends Cubit<OrdersState> {
     try {
       final orders = await repository.loadOrders();
       // Only apply the restored history if the user hasn't mutated anything.
-      if (!isClosed && !_mutated && orders.isNotEmpty) {
-        emit(OrdersState(orders: orders));
+      if (!isClosed && !_mutated) {
+        emit(OrdersState(orders: orders, restored: true));
       }
     } catch (error) {
-      // A failed store read must not crash the app; start empty.
+      // A failed store read must not crash the app; mark the state restored
+      // (empty) so a deep link can resolve to not-found rather than hang.
+      if (!isClosed && !_mutated) {
+        emit(const OrdersState(restored: true));
+      }
       debugPrint('Failed to restore orders: $error');
     }
   }
@@ -57,16 +65,25 @@ class OrdersCubit extends Cubit<OrdersState> {
     });
   }
 
+  /// Looks up an order by its [orderNumber], or `null` when unknown — used by
+  /// the router to resolve `/orders/:orderNumber` deep links.
+  Order? orderByNumber(String orderNumber) {
+    for (final order in state.orders) {
+      if (order.orderNumber == orderNumber) return order;
+    }
+    return null;
+  }
+
   /// Appends [order] to the history as the most recent entry.
   void recordOrder(Order order) {
     _mutated = true;
-    emit(OrdersState(orders: [order, ...state.orders]));
+    emit(OrdersState(orders: [order, ...state.orders], restored: true));
     _persist();
   }
 
   void clear() {
     _mutated = true;
-    emit(const OrdersState());
+    emit(const OrdersState(restored: true));
     _persist();
   }
 }

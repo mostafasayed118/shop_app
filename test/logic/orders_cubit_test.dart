@@ -77,6 +77,18 @@ void main() {
       ],
     );
 
+    test('orderByNumber finds an order by its number or returns null', () {
+      final cubit = OrdersCubit();
+      cubit.recordOrder(order('SH-1'));
+      cubit.recordOrder(order('SH-2'));
+
+      expect(cubit.orderByNumber('SH-1')?.orderNumber, 'SH-1');
+      expect(cubit.orderByNumber('SH-2')?.orderNumber, 'SH-2');
+      expect(cubit.orderByNumber('SH-999'), isNull);
+
+      cubit.close();
+    });
+
     blocTest<OrdersCubit, OrdersState>(
       'clear empties the history',
       build: () => OrdersCubit(),
