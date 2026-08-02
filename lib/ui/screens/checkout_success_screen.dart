@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/utils/money.dart';
+import '../../core/utils/strings.dart';
+import '../widgets/circle_icon.dart';
 
 /// Mock order confirmation — no real payment is processed.
 class CheckoutSuccessScreen extends StatelessWidget {
@@ -30,44 +32,43 @@ class CheckoutSuccessScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_rounded,
-                  size: 56,
-                  color: theme.colorScheme.primary,
+              CircleIcon(
+                icon: Icons.check_rounded,
+                size: 104,
+                iconSize: 56,
+                backgroundColor: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.6,
                 ),
               ),
               const SizedBox(height: 24),
               Text(
                 'Order confirmed!',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Order #$orderNumber',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
-                '$itemCount item${itemCount == 1 ? '' : 's'} \u00b7 '
+                '${pluralize(itemCount, 'item')} \u00b7 '
                 '${formatPrice(total)}',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
                 'This is a demo checkout \u2014 no payment was processed.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(

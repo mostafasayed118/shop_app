@@ -67,10 +67,12 @@ void main() {
       },
       expect: () => [
         const CartState(items: [CartItem(product: headphones, quantity: 1)]),
-        const CartState(items: [
-          CartItem(product: headphones, quantity: 1),
-          CartItem(product: tee, quantity: 1),
-        ]),
+        const CartState(
+          items: [
+            CartItem(product: headphones, quantity: 1),
+            CartItem(product: tee, quantity: 1),
+          ],
+        ),
       ],
     );
 
@@ -125,10 +127,12 @@ void main() {
       },
       expect: () => [
         const CartState(items: [CartItem(product: headphones, quantity: 1)]),
-        const CartState(items: [
-          CartItem(product: headphones, quantity: 1),
-          CartItem(product: tee, quantity: 1),
-        ]),
+        const CartState(
+          items: [
+            CartItem(product: headphones, quantity: 1),
+            CartItem(product: tee, quantity: 1),
+          ],
+        ),
         const CartState(items: [CartItem(product: tee, quantity: 1)]),
       ],
     );
@@ -166,10 +170,9 @@ void main() {
 
       await pumpEventQueue();
 
-      expect(
-        cubit.state.items,
-        const [CartItem(product: headphones, quantity: 2)],
-      );
+      expect(cubit.state.items, const [
+        CartItem(product: headphones, quantity: 2),
+      ]);
       await cubit.close();
     });
 
@@ -180,17 +183,15 @@ void main() {
 
       cubit.addProduct(headphones, quantity: 2);
       await pumpEventQueue();
-      expect(
-        repository.stored,
-        const [CartItem(product: headphones, quantity: 2)],
-      );
+      expect(repository.stored, const [
+        CartItem(product: headphones, quantity: 2),
+      ]);
 
       cubit.incrementQuantity('1');
       await pumpEventQueue();
-      expect(
-        repository.stored,
-        const [CartItem(product: headphones, quantity: 3)],
-      );
+      expect(repository.stored, const [
+        CartItem(product: headphones, quantity: 3),
+      ]);
 
       cubit.removeProduct('1');
       await pumpEventQueue();

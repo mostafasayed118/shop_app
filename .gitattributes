@@ -1,0 +1,5 @@
+# Shell scripts must stay LF on every platform: with core.autocrlf=true
+# (the Windows default) a CRLF checkout breaks the `#!/bin/sh` shebang and
+# the pre-commit hook.
+*.sh text eol=lf
+tool/pre-commit text eol=lf

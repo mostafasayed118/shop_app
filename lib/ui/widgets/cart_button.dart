@@ -18,9 +18,9 @@ class CartButton extends StatelessWidget {
       builder: (context, state) {
         return IconButton(
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const CartScreen()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => const CartScreen()));
           },
           tooltip: 'Cart',
           icon: Badge(

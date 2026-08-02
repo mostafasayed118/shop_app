@@ -1,9 +1,5 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/cart_item.dart';
+import 'json_store.dart';
 
 /// Persists the cart as a JSON list under a single SharedPreferences key.
 ///
@@ -13,27 +9,16 @@ class CartRepository {
   static const _key = 'cart_items';
 
   Future<List<CartItem>> loadCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null) return const [];
-
-    try {
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      return decoded
+    return readStoredJson(
+      _key,
+      fallback: const <CartItem>[],
+      decode: (json) => (json as List<dynamic>)
           .map((item) => CartItem.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (error) {
-      // Corrupt or legacy payload: start empty rather than crash.
-      debugPrint('Failed to decode saved cart: $error');
-      return const [];
-    }
+          .toList(),
+    );
   }
 
   Future<void> saveCart(List<CartItem> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key,
-      jsonEncode(items.map((item) => item.toJson()).toList()),
-    );
+    await writeStoredJson(_key, items.map((item) => item.toJson()).toList());
   }
 }

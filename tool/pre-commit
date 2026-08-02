@@ -1,0 +1,65 @@
+#!/bin/sh
+# Pre-commit hook for Shoply (e_commerce).
+#
+# Runs `flutter analyze` and `flutter test` before every commit so the
+# repository stays green. This is the fast half of tool/health_check.sh —
+# the debug-APK build is intentionally excluded (too slow for every commit).
+#
+# Behaviour:
+#   - Skips automatically when no Dart-relevant paths are staged (e.g. a
+#     README-only commit), so docs changes aren't slowed down.
+#   - Blocks the commit (exit 1) if analyze or tests fail, and prints the
+#     failing output tail.
+#   - Escapes: `git commit --no-verify`.
+#
+# Install (one-time):  bash tool/install_precommit_hook.sh
+# Run as the real hook from anywhere: it resolves the repo root via git.
+
+set -u # not -e: report both checks
+
+ROOT="$(git rev-parse --show-toplevel)" || {
+  echo "pre-commit: not inside a git work tree."
+  exit 1
+}
+cd "$ROOT" || exit 1
+
+# Skip first: docs-only commits must never depend on the environment (e.g. an
+# IDE commit dialog without flutter on PATH). Renames (R) are intentionally
+# excluded - a pure `git mv` carries no content change to validate.
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+if ! printf '%s\n' "$STAGED" | grep -qE '^(lib/|test/|pubspec\.ya?ml|analysis_options\.yaml)'; then
+  echo "pre-commit: no Dart-relevant changes staged - skipping analyze/tests."
+  exit 0
+fi
+
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "pre-commit: 'flutter' not found on PATH."
+  echo "pre-commit: add Flutter to your PATH, or bypass with 'git commit --no-verify'."
+  exit 1
+fi
+
+FAILED=0
+
+echo "pre-commit: running flutter analyze ..."
+if ! flutter analyze >/tmp/precommit_analyze.log 2>&1; then
+  echo "pre-commit: FAIL - flutter analyze (full log: /tmp/precommit_analyze.log)"
+  tail -20 /tmp/precommit_analyze.log
+  FAILED=1
+else
+  echo "pre-commit: PASS - flutter analyze"
+fi
+
+echo "pre-commit: running flutter test ..."
+if ! flutter test >/tmp/precommit_test.log 2>&1; then
+  echo "pre-commit: FAIL - flutter test (full log: /tmp/precommit_test.log)"
+  tail -20 /tmp/precommit_test.log
+  FAILED=1
+else
+  echo "pre-commit: PASS - flutter test"
+fi
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "pre-commit: commit blocked - fix the issues above, or bypass with 'git commit --no-verify'."
+  exit 1
+fi
+exit 0

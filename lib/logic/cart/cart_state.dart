@@ -10,8 +10,7 @@ class CartState extends Equatable {
   final List<CartItem> items;
 
   /// Total number of units across all items (used for the app-bar badge).
-  int get itemsCount =>
-      items.fold(0, (sum, item) => sum + item.quantity);
+  int get itemsCount => items.fold(0, (sum, item) => sum + item.quantity);
 
   /// Live cart total across all items.
   double get totalPrice => items.fold(0.0, (sum, item) => sum + item.total);

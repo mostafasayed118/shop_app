@@ -1,9 +1,11 @@
 import 'package:e_commerce/data/models/product.dart';
 import 'package:e_commerce/data/repositories/cart_repository.dart';
+import 'package:e_commerce/data/repositories/catalogue_preferences_repository.dart';
 import 'package:e_commerce/data/repositories/product_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
+import 'package:e_commerce/logic/theme/theme_cubit.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/screens/cart_screen.dart';
 import 'package:e_commerce/ui/screens/checkout_success_screen.dart';
@@ -197,6 +199,7 @@ void main() {
         providers: [
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -223,6 +226,7 @@ void main() {
         providers: [
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -283,6 +287,7 @@ void main() {
         providers: [
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -308,6 +313,7 @@ void main() {
         providers: [
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -355,6 +361,7 @@ void main() {
           providers: [
             BlocProvider.value(value: productsCubit),
             BlocProvider(create: (_) => CartCubit()),
+            BlocProvider(create: (_) => ThemeCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -398,6 +405,7 @@ void main() {
           providers: [
             BlocProvider.value(value: productsCubit),
             BlocProvider(create: (_) => CartCubit()),
+            BlocProvider(create: (_) => ThemeCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -436,6 +444,56 @@ void main() {
     },
   );
 
+  testWidgets('a quick-add toast queues behind the refresh-failure snackbar', (
+    tester,
+  ) async {
+    // Phone viewport so the quick-add button on the card is on screen.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final productsCubit = ProductsCubit(_RefreshFailRepository());
+    await productsCubit.loadProducts(); // initial load succeeds
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: productsCubit),
+          BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
+        ],
+        child: MaterialApp(
+          theme: buildShopTheme(),
+          home: const ProductsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Aurora Wireless Headphones'), findsOneWidget);
+
+    // A failed refresh leaves the refresh-failure snackbar on screen.
+    await productsCubit.loadProducts();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Couldn\u2019t refresh'), findsOneWidget);
+
+    // Quick-add: the card owns its own toast, so it queues behind the
+    // refresh message instead of yanking it.
+    await tester.tap(find.byTooltip('Add to cart').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Couldn\u2019t refresh'), findsOneWidget);
+    expect(find.textContaining('added to cart'), findsNothing);
+
+    // Once the refresh message auto-dismisses, the queued toast appears.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('added to cart'), findsOneWidget);
+    expect(find.textContaining('Couldn\u2019t refresh'), findsNothing);
+
+    // Flush the add-to-cart toast's timer before the test ends.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('sort menu reorders the grid', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -449,6 +507,7 @@ void main() {
         providers: [
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -488,6 +547,7 @@ void main() {
       providers: [
         BlocProvider.value(value: productsCubit),
         BlocProvider.value(value: cartCubit),
+        BlocProvider(create: (_) => ThemeCubit()),
       ],
       child: MaterialApp(theme: buildShopTheme(), home: const ProductsScreen()),
     );
@@ -509,4 +569,146 @@ void main() {
 
     expect(find.text('1'), findsWidgets);
   });
+
+  testWidgets('cart shows a toast when an item is removed', (tester) async {
+    final cartCubit = CartCubit();
+    cartCubit.addProduct(
+      const Product(
+        id: '1',
+        name: 'Aurora Wireless Headphones',
+        description: 'Over-ear headphones.',
+        price: 249.99,
+        imageAsset: 'assets/images/product_1.png',
+        category: 'Audio',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [BlocProvider.value(value: cartCubit)],
+        child: MaterialApp(theme: buildShopTheme(), home: const CartScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Remove'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('removed from cart'), findsOneWidget);
+    expect(find.text('Your cart is empty'), findsOneWidget);
+
+    // Flush the snackbar timer before the test ends.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('cart shows a toast when cleared', (tester) async {
+    final cartCubit = CartCubit();
+    cartCubit.addProduct(
+      const Product(
+        id: '1',
+        name: 'Aurora Wireless Headphones',
+        description: 'Over-ear headphones.',
+        price: 249.99,
+        imageAsset: 'assets/images/product_1.png',
+        category: 'Audio',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [BlocProvider.value(value: cartCubit)],
+        child: MaterialApp(theme: buildShopTheme(), home: const CartScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Clear cart'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cart cleared'), findsOneWidget);
+    expect(find.text('Your cart is empty'), findsOneWidget);
+
+    // Flush the snackbar timer before the test ends.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+    'search and sort survive an app restart via the preferences store',
+    (tester) async {
+      // Phone viewport so the grid and sort menu behave like on a device.
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      // Build the screen over a manually created cubit so the test owns both
+      // "sessions" (ShopApp's own initial-load timer is order-sensitive when
+      // many testWidgets share an isolate). The persistence still flows
+      // through the real CataloguePreferencesRepository + mocked
+      // SharedPreferences store, exactly as ShopApp wires it.
+      Widget buildApp(ProductsCubit productsCubit) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: productsCubit),
+          BlocProvider(create: (_) => CartCubit()),
+          BlocProvider(create: (_) => ThemeCubit()),
+        ],
+        child: MaterialApp(
+          theme: buildShopTheme(),
+          home: const ProductsScreen(),
+        ),
+      );
+
+      // Session 1: browse with a search query and a sort order, both of which
+      // persist through the preferences repository.
+      final sessionOne = ProductsCubit(
+        _InstantRepository(),
+        CataloguePreferencesRepository(),
+      );
+      await sessionOne.loadProducts();
+      await tester.pumpWidget(buildApp(sessionOne));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'nomad');
+      await tester.pumpAndSettle();
+      expect(find.text('Nomad Everyday Backpack'), findsOneWidget);
+      expect(find.text('Aurora Wireless Headphones'), findsNothing);
+
+      // Pick a sort order on top of the filtered grid.
+      await tester.tap(find.byIcon(Icons.swap_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Price: low to high'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      // "Restart": tear down and boot a brand-new cubit over the same store.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      final sessionTwo = ProductsCubit(
+        _InstantRepository(),
+        CataloguePreferencesRepository(),
+      );
+      await sessionTwo.loadProducts(); // applies the saved preferences
+      await tester.pumpWidget(buildApp(sessionTwo));
+      await tester.pumpAndSettle();
+
+      // The saved search text is restored and still filters the grid.
+      expect(find.text('Nomad Everyday Backpack'), findsOneWidget);
+      expect(find.text('Aurora Wireless Headphones'), findsNothing);
+
+      // Clear the search: the restored sort (price low to high) is still
+      // applied, so the cheapest item (Nomad, $89.99) sits above Aurora
+      // ($249.99). With only four products the whole grid is built, so both
+      // rows are on screen. In catalogue "featured" order Aurora would lead
+      // the grid, which is what makes this a real proof of the restored sort.
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      expect(find.text('Nomad Everyday Backpack'), findsOneWidget);
+      expect(find.text('Aurora Wireless Headphones'), findsOneWidget);
+      final nomadY = tester.getTopLeft(find.text('Nomad Everyday Backpack')).dy;
+      final auroraY = tester
+          .getTopLeft(find.text('Aurora Wireless Headphones'))
+          .dy;
+      expect(nomadY, lessThan(auroraY));
+    },
+  );
 }

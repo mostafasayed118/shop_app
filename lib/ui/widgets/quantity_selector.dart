@@ -34,8 +34,9 @@ class QuantitySelector extends StatelessWidget {
           ),
           Text(
             '$quantity',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           IconButton(
             onPressed: onIncrement,

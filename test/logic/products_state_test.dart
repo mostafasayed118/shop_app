@@ -31,7 +31,10 @@ void main() {
 
   group('ProductsLoaded.filteredProducts', () {
     test('returns everything when no filters are active', () {
-      expect(const ProductsLoaded(products: products).filteredProducts, products);
+      expect(
+        const ProductsLoaded(products: products).filteredProducts,
+        products,
+      );
     });
 
     test('matches the name case-insensitively', () {
@@ -45,8 +48,10 @@ void main() {
     });
 
     test('filters by selected category', () {
-      const state =
-          ProductsLoaded(products: products, selectedCategory: 'Audio');
+      const state = ProductsLoaded(
+        products: products,
+        selectedCategory: 'Audio',
+      );
       expect(state.filteredProducts, [headphones]);
     });
 

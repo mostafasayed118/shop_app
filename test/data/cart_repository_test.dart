@@ -23,14 +23,13 @@ void main() {
   group('CartRepository', () {
     test('round-trips a cart through JSON', () async {
       final repository = CartRepository();
-      await repository.saveCart(
-        const [CartItem(product: headphones, quantity: 2)],
-      );
+      await repository.saveCart(const [
+        CartItem(product: headphones, quantity: 2),
+      ]);
 
-      expect(
-        await repository.loadCart(),
-        const [CartItem(product: headphones, quantity: 2)],
-      );
+      expect(await repository.loadCart(), const [
+        CartItem(product: headphones, quantity: 2),
+      ]);
     });
 
     test('returns an empty cart when nothing was saved', () async {

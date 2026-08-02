@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'circle_icon.dart';
+
 /// Shared empty / error presentation: soft icon, title, optional message and
 /// action (e.g. a retry button).
 class StatusView extends StatelessWidget {
@@ -25,29 +27,23 @@ class StatusView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 40, color: theme.colorScheme.primary),
-            ),
+            CircleIcon(icon: icon),
             const SizedBox(height: 20),
             Text(
               title,
               textAlign: TextAlign.center,
-              style:
-                  theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (message != null) ...[
               const SizedBox(height: 8),
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             if (action != null) ...[const SizedBox(height: 24), action!],

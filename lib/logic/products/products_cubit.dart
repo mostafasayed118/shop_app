@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/utils/write_queue.dart';
 import '../../data/models/catalogue_preferences.dart';
 import '../../data/repositories/catalogue_preferences_repository.dart';
 import '../../data/repositories/product_repository.dart';
@@ -23,7 +22,7 @@ import 'products_state.dart';
 /// snackbar fire again.
 class ProductsCubit extends Cubit<ProductsState> {
   ProductsCubit(this._repository, [this._preferencesRepository])
-      : super(const ProductsInitial());
+    : super(const ProductsInitial());
 
   final ProductRepository _repository;
   final CataloguePreferencesRepository? _preferencesRepository;
@@ -37,7 +36,7 @@ class ProductsCubit extends Cubit<ProductsState> {
 
   /// Serializes preference writes so a fast burst of filter changes (e.g.
   /// per-keystroke search) can't land on disk out of order.
-  Future<void> _writeChain = Future.value();
+  final WriteQueue _writes = WriteQueue();
 
   Future<void> loadProducts() async {
     // Ignore an overlapping reload (e.g. a second pull while one is already in
@@ -53,34 +52,40 @@ class ProductsCubit extends Cubit<ProductsState> {
         // Clear the stale failure flag so a consecutive failure emits a
         // distinct state and the UI snackbar can fire again.
         if (previous.refreshFailed) {
-          emit(ProductsLoaded(
-            products: previous.products,
-            query: previous.query,
-            selectedCategory: previous.selectedCategory,
-            sortField: previous.sortField,
-            sortDirection: previous.sortDirection,
-          ));
+          emit(
+            ProductsLoaded(
+              products: previous.products,
+              query: previous.query,
+              selectedCategory: previous.selectedCategory,
+              sortField: previous.sortField,
+              sortDirection: previous.sortDirection,
+            ),
+          );
         }
         try {
           final products = await _repository.getProducts();
-          emit(ProductsLoaded(
-            products: products,
-            query: previous.query,
-            selectedCategory: previous.selectedCategory,
-            sortField: previous.sortField,
-            sortDirection: previous.sortDirection,
-          ));
+          emit(
+            ProductsLoaded(
+              products: products,
+              query: previous.query,
+              selectedCategory: previous.selectedCategory,
+              sortField: previous.sortField,
+              sortDirection: previous.sortDirection,
+            ),
+          );
         } catch (error, stackTrace) {
           // Log the real cause for debuggability; the UI shows a snackbar.
           debugPrint('Failed to refresh products: $error\n$stackTrace');
-          emit(ProductsLoaded(
-            products: previous.products,
-            query: previous.query,
-            selectedCategory: previous.selectedCategory,
-            refreshFailed: true,
-            sortField: previous.sortField,
-            sortDirection: previous.sortDirection,
-          ));
+          emit(
+            ProductsLoaded(
+              products: previous.products,
+              query: previous.query,
+              selectedCategory: previous.selectedCategory,
+              refreshFailed: true,
+              sortField: previous.sortField,
+              sortDirection: previous.sortDirection,
+            ),
+          );
         }
         return;
       }
@@ -90,20 +95,25 @@ class ProductsCubit extends Cubit<ProductsState> {
       try {
         final products = await _repository.getProducts();
         final preferences = await _loadPreferences();
-        emit(ProductsLoaded(
-          products: products,
-          query: preferences?.query ?? '',
-          selectedCategory: preferences?.category,
-          sortField: preferences?.sortField ?? SortField.featured,
-          sortDirection:
-              preferences?.sortDirection ?? SortDirection.ascending,
-        ));
+        emit(
+          ProductsLoaded(
+            products: products,
+            query: preferences?.query ?? '',
+            selectedCategory: preferences?.category,
+            sortField: preferences?.sortField ?? SortField.featured,
+            sortDirection:
+                preferences?.sortDirection ?? SortDirection.ascending,
+          ),
+        );
       } catch (error, stackTrace) {
         debugPrint('Failed to load products: $error\n$stackTrace');
-        emit(const ProductsError(
-          message: 'We couldn\u2019t load the catalogue right now. '
-              'Please check your connection and try again.',
-        ));
+        emit(
+          const ProductsError(
+            message:
+                'We couldn\u2019t load the catalogue right now. '
+                'Please check your connection and try again.',
+          ),
+        );
       }
     } finally {
       _loading = false;
@@ -114,13 +124,15 @@ class ProductsCubit extends Cubit<ProductsState> {
   void updateQuery(String query) {
     final loaded = _loadedOrNull();
     if (loaded == null) return;
-    emit(ProductsLoaded(
-      products: loaded.products,
-      query: query,
-      selectedCategory: loaded.selectedCategory,
-      sortField: loaded.sortField,
-      sortDirection: loaded.sortDirection,
-    ));
+    emit(
+      ProductsLoaded(
+        products: loaded.products,
+        query: query,
+        selectedCategory: loaded.selectedCategory,
+        sortField: loaded.sortField,
+        sortDirection: loaded.sortDirection,
+      ),
+    );
     _savePreferences();
   }
 
@@ -128,13 +140,15 @@ class ProductsCubit extends Cubit<ProductsState> {
   void selectCategory(String? category) {
     final loaded = _loadedOrNull();
     if (loaded == null) return;
-    emit(ProductsLoaded(
-      products: loaded.products,
-      query: loaded.query,
-      selectedCategory: category,
-      sortField: loaded.sortField,
-      sortDirection: loaded.sortDirection,
-    ));
+    emit(
+      ProductsLoaded(
+        products: loaded.products,
+        query: loaded.query,
+        selectedCategory: category,
+        sortField: loaded.sortField,
+        sortDirection: loaded.sortDirection,
+      ),
+    );
     _savePreferences();
   }
 
@@ -142,13 +156,15 @@ class ProductsCubit extends Cubit<ProductsState> {
   void setSort(SortField field, SortDirection direction) {
     final loaded = _loadedOrNull();
     if (loaded == null) return;
-    emit(ProductsLoaded(
-      products: loaded.products,
-      query: loaded.query,
-      selectedCategory: loaded.selectedCategory,
-      sortField: field,
-      sortDirection: direction,
-    ));
+    emit(
+      ProductsLoaded(
+        products: loaded.products,
+        query: loaded.query,
+        selectedCategory: loaded.selectedCategory,
+        sortField: field,
+        sortDirection: direction,
+      ),
+    );
     _savePreferences();
   }
 
@@ -176,7 +192,7 @@ class ProductsCubit extends Cubit<ProductsState> {
       sortField: loaded.sortField,
       sortDirection: loaded.sortDirection,
     );
-    _writeChain = _writeChain.then((_) async {
+    _writes.enqueue(() async {
       try {
         await repository.save(snapshot);
       } catch (error) {

@@ -1,17 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/utils/money.dart';
+import '../../core/utils/strings.dart';
 import '../../data/models/cart_item.dart';
 import '../../logic/cart/cart_cubit.dart';
 import '../../logic/cart/cart_state.dart';
+import '../widgets/bottom_action_bar.dart';
+import '../widgets/owned_snack_bar.dart';
+import '../widgets/price_text.dart';
 import '../widgets/quantity_selector.dart';
 import '../widgets/status_view.dart';
+import '../widgets/surface_card.dart';
 import 'checkout_success_screen.dart';
 
 /// Shopping cart: item lines with quantity steppers, live total, checkout.
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen>
+    with OwnedSnackBar<CartScreen> {
+  void _clearCart() {
+    context.read<CartCubit>().clear();
+    showOwnedToast('Cart cleared');
+  }
+
+  void _removeItem(CartItem item) {
+    context.read<CartCubit>().removeProduct(item.product.id);
+    showOwnedToast('${item.product.name} removed from cart');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +40,10 @@ class CartScreen extends StatelessWidget {
         title: const Text('Cart'),
         actions: [
           BlocBuilder<CartCubit, CartState>(
-            buildWhen: (previous, current) => previous.isEmpty != current.isEmpty,
+            buildWhen: (previous, current) =>
+                previous.isEmpty != current.isEmpty,
             builder: (context, state) => IconButton(
-              onPressed: state.isEmpty ? null : () => context.read<CartCubit>().clear(),
+              onPressed: state.isEmpty ? null : () => _clearCart(),
               tooltip: 'Clear cart',
               icon: const Icon(Icons.delete_sweep_outlined),
             ),
@@ -42,8 +63,13 @@ class CartScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: state.items.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) =>
-                _CartItemTile(item: state.items[index]),
+            itemBuilder: (context, index) {
+              final item = state.items[index];
+              return _CartItemTile(
+                item: item,
+                onRemove: () => _removeItem(item),
+              );
+            },
           );
         },
       ),
@@ -53,7 +79,10 @@ class CartScreen extends StatelessWidget {
             previous.isEmpty != current.isEmpty,
         builder: (context, state) {
           if (state.isEmpty) return const SizedBox.shrink();
-          return _CheckoutBar(total: state.totalPrice, itemCount: state.itemsCount);
+          return _CheckoutBar(
+            total: state.totalPrice,
+            itemCount: state.itemsCount,
+          );
         },
       ),
     );
@@ -61,20 +90,17 @@ class CartScreen extends StatelessWidget {
 }
 
 class _CartItemTile extends StatelessWidget {
-  const _CartItemTile({required this.item});
+  const _CartItemTile({required this.item, required this.onRemove});
 
   final CartItem item;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cubit = context.read<CartCubit>();
-    return Container(
+    return SurfaceCard(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -96,14 +122,16 @@ class _CartItemTile extends StatelessWidget {
                   item.product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  formatPrice(item.product.price),
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                PriceText(
+                  item.product.price,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -111,17 +139,20 @@ class _CartItemTile extends StatelessWidget {
                     QuantitySelector(
                       quantity: item.quantity,
                       min: 1,
-                      onIncrement: () => cubit.incrementQuantity(item.product.id),
-                      onDecrement: () => cubit.decrementQuantity(item.product.id),
+                      onIncrement: () =>
+                          cubit.incrementQuantity(item.product.id),
+                      onDecrement: () =>
+                          cubit.decrementQuantity(item.product.id),
                     ),
                     const Spacer(),
-                    Text(
-                      formatPrice(item.total),
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                    PriceText(
+                      item.total,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     IconButton(
-                      onPressed: () => cubit.removeProduct(item.product.id),
+                      onPressed: onRemove,
                       tooltip: 'Remove',
                       icon: const Icon(Icons.close),
                     ),
@@ -159,44 +190,41 @@ class _CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
+    return BottomActionBar(
+      above: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Text(
                 'Total',
-                style:
-                    theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Spacer(),
-              Text(
-                formatPrice(total),
+              PriceText(
+                total,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.primary,
                 ),
+                color: theme.colorScheme.primary,
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            '$itemCount item${itemCount == 1 ? '' : 's'} \u00b7 Free delivery',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => _checkout(context),
-              icon: const Icon(Icons.lock_outline),
-              label: const Text('Checkout'),
+            '${pluralize(itemCount, 'item')} \u00b7 Free delivery',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
+      ),
+      button: FilledButton.icon(
+        onPressed: () => _checkout(context),
+        icon: const Icon(Icons.lock_outline),
+        label: const Text('Checkout'),
       ),
     );
   }

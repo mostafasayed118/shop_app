@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/utils/write_queue.dart';
 import '../../data/models/cart_item.dart';
 import '../../data/models/product.dart';
 import '../../data/repositories/cart_repository.dart';
@@ -29,7 +28,7 @@ class CartCubit extends Cubit<CartState> {
 
   /// Serializes persist writes so a fast burst of mutations can't land on
   /// disk out of order (each write snapshots its own state at call time).
-  Future<void> _writeChain = Future.value();
+  final WriteQueue _writes = WriteQueue();
 
   Future<void> _restore() async {
     final repository = _repository;
@@ -53,7 +52,7 @@ class CartCubit extends Cubit<CartState> {
     final repository = _repository;
     if (repository == null) return;
     final snapshot = state.items;
-    _writeChain = _writeChain.then((_) async {
+    _writes.enqueue(() async {
       try {
         await repository.saveCart(snapshot);
       } catch (error) {

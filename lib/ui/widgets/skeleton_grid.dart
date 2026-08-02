@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'product_grid.dart';
+
 /// Pulsing placeholder grid shown while the catalogue loads.
 ///
 /// Dependency-free shimmer: an [AnimationController] drives opacity between
@@ -36,13 +38,8 @@ class _SkeletonGridState extends State<SkeletonGrid>
       opacity: _controller,
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: widget.crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.6,
-        ),
+        padding: kProductGridPadding,
+        gridDelegate: productGridDelegate(widget.crossAxisCount),
         itemCount: math.max(widget.crossAxisCount, 2) * 2,
         itemBuilder: (context, index) => const _SkeletonCard(),
       ),

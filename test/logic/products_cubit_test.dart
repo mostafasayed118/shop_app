@@ -367,8 +367,9 @@ void main() {
     blocTest<ProductsCubit, ProductsState>(
       'applies saved preferences to the initial load',
       build: () {
-        when(() => repository.getProducts())
-            .thenAnswer((_) async => const [product, tee]);
+        when(
+          () => repository.getProducts(),
+        ).thenAnswer((_) async => const [product, tee]);
         final prefs = _FakePreferencesRepository(
           const CataloguePreferences(
             query: 'head',
@@ -395,8 +396,9 @@ void main() {
     );
 
     test('persists preferences when filters or sort change', () async {
-      when(() => repository.getProducts())
-          .thenAnswer((_) async => const [product, tee]);
+      when(
+        () => repository.getProducts(),
+      ).thenAnswer((_) async => const [product, tee]);
       final prefs = _FakePreferencesRepository(null);
       final cubit = ProductsCubit(repository, prefs);
 
@@ -413,8 +415,9 @@ void main() {
     });
 
     test('falls back to defaults when no preferences are saved', () async {
-      when(() => repository.getProducts())
-          .thenAnswer((_) async => const [product]);
+      when(
+        () => repository.getProducts(),
+      ).thenAnswer((_) async => const [product]);
       final prefs = _FakePreferencesRepository(null);
       final cubit = ProductsCubit(repository, prefs);
 

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../core/utils/enum_lookup.dart';
 import 'product_sort.dart';
 
 /// The last-used catalogue browsing configuration (search text, category chip
@@ -18,11 +19,11 @@ class CataloguePreferences extends Equatable {
       query: json['query'] as String? ?? '',
       category: json['category'] as String?,
       sortField:
-          _enumByName(SortField.values, json['sortField'] as String?) ??
-              SortField.featured,
+          enumByName(SortField.values, json['sortField'] as String?) ??
+          SortField.featured,
       sortDirection:
-          _enumByName(SortDirection.values, json['sortDirection'] as String?) ??
-              SortDirection.ascending,
+          enumByName(SortDirection.values, json['sortDirection'] as String?) ??
+          SortDirection.ascending,
     );
   }
 
@@ -40,13 +41,4 @@ class CataloguePreferences extends Equatable {
 
   @override
   List<Object?> get props => [query, category, sortField, sortDirection];
-}
-
-/// Matches an enum by [name], tolerating unknown/missing values from an
-/// older or hand-edited payload.
-T? _enumByName<T extends Enum>(List<T> values, String? name) {
-  for (final value in values) {
-    if (value.name == name) return value;
-  }
-  return null;
 }

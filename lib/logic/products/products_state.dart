@@ -65,7 +65,8 @@ class ProductsLoaded extends ProductsState {
   List<Product> get filteredProducts {
     final search = query.trim().toLowerCase();
     return products.where((product) {
-      final matchesSearch = search.isEmpty ||
+      final matchesSearch =
+          search.isEmpty ||
           product.name.toLowerCase().contains(search) ||
           product.category.toLowerCase().contains(search);
       final matchesCategory =
@@ -86,9 +87,11 @@ class ProductsLoaded extends ProductsState {
     final ascending = sortDirection == SortDirection.ascending;
     switch (sortField) {
       case SortField.price:
-        sorted.sort((a, b) => ascending
-            ? a.price.compareTo(b.price)
-            : b.price.compareTo(a.price));
+        sorted.sort(
+          (a, b) => ascending
+              ? a.price.compareTo(b.price)
+              : b.price.compareTo(a.price),
+        );
       case SortField.name:
         sorted.sort((a, b) {
           final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
