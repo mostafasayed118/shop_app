@@ -5,15 +5,23 @@ import '../../data/models/product.dart';
 import '../../logic/wishlist/wishlist_cubit.dart';
 import '../../logic/wishlist/wishlist_state.dart';
 
-/// Heart toggle for [product], used over the product-card image. Filled when
-/// wishlisted, outlined otherwise; tapping flips it via [WishlistCubit].
+/// Heart toggle for [product]. Filled when wishlisted, outlined otherwise;
+/// tapping flips it via [WishlistCubit].
+///
+/// With [tonal] (default) it renders as the translucent compact chip used over
+/// product-card photos; with `tonal: false` it becomes a plain app-bar icon
+/// (for the detail screen), tinted only when saved.
 ///
 /// Rebuilds only when this product's membership actually changes, so toggling
-/// one card doesn't rebuild every heart on screen.
+/// one heart doesn't rebuild every heart on screen.
 class WishlistHeartButton extends StatelessWidget {
-  const WishlistHeartButton({super.key, required this.product});
+  const WishlistHeartButton({super.key, required this.product, this.tonal = true});
 
   final Product product;
+
+  /// Overlay-chip styling (translucent backing, compact size) vs. a plain
+  /// app-bar icon.
+  final bool tonal;
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +34,20 @@ class WishlistHeartButton extends StatelessWidget {
         return IconButton(
           onPressed: () => context.read<WishlistCubit>().toggle(product),
           tooltip: saved ? 'Remove from wishlist' : 'Add to wishlist',
-          // A translucent surface chip so the heart reads over the photo.
-          style: IconButton.styleFrom(
-            backgroundColor: scheme.surface.withValues(alpha: 0.92),
-            foregroundColor: saved ? scheme.primary : scheme.onSurfaceVariant,
-          ),
-          visualDensity: VisualDensity.compact,
-          icon: Icon(saved ? Icons.favorite : Icons.favorite_border, size: 20),
+          // The tonal chip gets a translucent surface backing so it reads over
+          // a photo; the app-bar heart is a plain icon tinted when saved.
+          style: tonal
+              ? IconButton.styleFrom(
+                  backgroundColor: scheme.surface.withValues(alpha: 0.92),
+                  foregroundColor: saved
+                      ? scheme.primary
+                      : scheme.onSurfaceVariant,
+                )
+              : null,
+          color: tonal ? null : (saved ? scheme.primary : null),
+          visualDensity: tonal ? VisualDensity.compact : null,
+          iconSize: tonal ? 20 : null,
+          icon: Icon(saved ? Icons.favorite : Icons.favorite_border),
         );
       },
     );

@@ -115,6 +115,40 @@ void main() {
     expect(find.byTooltip('Add to wishlist'), findsWidgets);
   });
 
+  testWidgets('the detail screen heart favorites the product', (tester) async {
+    final wishlistCubit = WishlistCubit();
+    final productsCubit = await loadProducts();
+    addTearDown(wishlistCubit.close);
+    addTearDown(productsCubit.close);
+
+    // Boot straight into a deep link so the detail screen is showing.
+    await tester.pumpWidget(
+      buildApp(
+        productsCubit,
+        wishlistCubit: wishlistCubit,
+        initialLocation: '/product/1',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(ProductDetailScreen), findsOneWidget);
+    expect(find.byTooltip('Add to wishlist'), findsOneWidget);
+
+    // Favoriting from the detail screen lands in the wishlist cubit and the
+    // app-bar heart flips to its filled glyph.
+    await tester.tap(find.byTooltip('Add to wishlist'));
+    await tester.pumpAndSettle();
+    expect(wishlistCubit.state.products, const [_headphones]);
+    expect(find.byTooltip('Remove from wishlist'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border), findsNothing);
+
+    // And un-favoriting works too.
+    await tester.tap(find.byTooltip('Remove from wishlist'));
+    await tester.pumpAndSettle();
+    expect(wishlistCubit.state.isEmpty, isTrue);
+    expect(find.byIcon(Icons.favorite), findsNothing);
+  });
+
   testWidgets('the app-bar heart opens the wishlist screen', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;

@@ -9,6 +9,7 @@ import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
 import '../widgets/product_image.dart';
 import '../widgets/quantity_selector.dart';
+import '../widgets/wishlist_heart_button.dart';
 
 /// Full product view: hero image, description, quantity stepper, add to cart.
 class ProductDetailScreen extends StatefulWidget {
@@ -35,7 +36,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(_product.name), actions: const [CartButton()]),
+      appBar: AppBar(
+        title: Text(_product.name),
+        actions: [
+          // The plain (non-tonal) heart: an app-bar icon, not a photo chip.
+          WishlistHeartButton(product: _product, tonal: false),
+          const CartButton(),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
