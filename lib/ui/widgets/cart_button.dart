@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../logic/cart/cart_cubit.dart';
 import '../../logic/cart/cart_state.dart';
-import '../screens/cart_screen.dart';
 
 /// App-bar cart icon with a live item-count badge.
 class CartButton extends StatelessWidget {
@@ -17,11 +17,7 @@ class CartButton extends StatelessWidget {
           previous.itemsCount != current.itemsCount,
       builder: (context, state) {
         return IconButton(
-          onPressed: () {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute<void>(builder: (_) => const CartScreen()));
-          },
+          onPressed: () => context.push('/cart'),
           tooltip: 'Cart',
           icon: Badge(
             isLabelVisible: state.itemsCount > 0,

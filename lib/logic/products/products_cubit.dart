@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/write_queue.dart';
 import '../../data/models/catalogue_preferences.dart';
+import '../../data/models/product.dart';
 import '../../data/repositories/catalogue_preferences_repository.dart';
 import '../../data/repositories/product_repository.dart';
 import 'products_state.dart';
@@ -147,6 +148,36 @@ class ProductsCubit extends Cubit<ProductsState> {
         selectedCategory: category,
         sortField: loaded.sortField,
         sortDirection: loaded.sortDirection,
+      ),
+    );
+    _savePreferences();
+  }
+
+  /// Looks up a product by [id] in the currently loaded catalogue, or `null`
+  /// when the catalogue isn't loaded or the id is unknown — used by the router
+  /// to resolve `/product/:id` deep links.
+  Product? productById(String id) {
+    final loaded = _loadedOrNull();
+    if (loaded == null) return null;
+    for (final product in loaded.products) {
+      if (product.id == id) return product;
+    }
+    return null;
+  }
+
+  /// Restores the default browse configuration (no search, all categories,
+  /// featured order) and persists it, so a restart doesn't re-apply the old
+  /// filters. A no-op unless the catalogue is loaded.
+  void resetCataloguePreferences() {
+    final loaded = _loadedOrNull();
+    if (loaded == null) return;
+    emit(
+      ProductsLoaded(
+        products: loaded.products,
+        query: '',
+        selectedCategory: null,
+        sortField: SortField.featured,
+        sortDirection: SortDirection.ascending,
       ),
     );
     _savePreferences();

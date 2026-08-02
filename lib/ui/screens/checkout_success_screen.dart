@@ -1,22 +1,27 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/utils/money.dart';
 import '../../core/utils/strings.dart';
+import '../../data/models/order.dart';
 import '../widgets/circle_icon.dart';
 
-/// Mock order confirmation — no real payment is processed.
-class CheckoutSuccessScreen extends StatelessWidget {
-  CheckoutSuccessScreen({
-    super.key,
-    required this.total,
-    required this.itemCount,
-  }) : orderNumber = 'SH-${100000 + Random().nextInt(900000)}';
+/// Route input contract for the checkout-success route. The cart is cleared
+/// *before* navigating, so the order can't be read back from the cart — it
+/// travels along as [GoRouterState.extra]. Lives here (with its consumer) so
+/// the router and the cart screen don't form an import cycle.
+class CheckoutSuccessArgs {
+  const CheckoutSuccessArgs({required this.order});
 
-  final double total;
-  final int itemCount;
-  final String orderNumber;
+  final Order order;
+}
+
+/// Mock order confirmation — no real payment is processed. Shows the order
+/// that was just recorded (and links to the full history).
+class CheckoutSuccessScreen extends StatelessWidget {
+  const CheckoutSuccessScreen({super.key, required this.order});
+
+  final Order order;
 
   @override
   Widget build(BuildContext context) {
@@ -49,22 +54,22 @@ class CheckoutSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Order #$orderNumber',
+                'Order #${order.orderNumber}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '${pluralize(itemCount, 'item')} \u00b7 '
-                '${formatPrice(total)}',
+                '${pluralize(order.itemCount, 'item')} · '
+                '${formatPrice(order.total)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'This is a demo checkout \u2014 no payment was processed.',
+                'This is a demo checkout — no payment was processed.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -74,10 +79,18 @@ class CheckoutSuccessScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((route) => route.isFirst),
+                  // Reset to the catalogue whatever the stack depth; the
+                  // products cubit lives above the navigator, so the grid
+                  // state is preserved.
+                  onPressed: () => context.go('/'),
                   child: const Text('Continue shopping'),
                 ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => context.push('/orders'),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('View order history'),
               ),
             ],
           ),

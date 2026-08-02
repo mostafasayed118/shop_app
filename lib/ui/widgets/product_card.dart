@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
 import '../../logic/cart/cart_cubit.dart';
-import '../screens/product_detail_screen.dart';
 import 'owned_snack_bar.dart';
 import 'price_text.dart';
 import 'product_image.dart';
 import 'surface_card.dart';
+import 'wishlist_heart_button.dart';
 
 /// A single product tile in the catalogue grid.
 class ProductCard extends StatefulWidget {
@@ -24,11 +25,9 @@ class _ProductCardState extends State<ProductCard>
   Product get product => widget.product;
 
   void _openDetails() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ProductDetailScreen(product: product),
-      ),
-    );
+    // The full product rides along as `extra`; the router falls back to a
+    // catalogue lookup for `/product/:id` deep links.
+    context.push('/product/${product.id}', extra: product);
   }
 
   void _quickAdd() {
@@ -47,7 +46,18 @@ class _ProductCardState extends State<ProductCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ProductImage(product: product),
+          // The heart sits over the top-right corner of the photo; it has its
+          // own gesture recognizer, so tapping it never opens the details.
+          Stack(
+            children: [
+              ProductImage(product: product),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: WishlistHeartButton(product: product),
+              ),
+            ],
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),

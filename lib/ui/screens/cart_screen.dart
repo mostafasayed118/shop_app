@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/utils/strings.dart';
 import '../../data/models/cart_item.dart';
+import '../../data/models/order.dart';
 import '../../logic/cart/cart_cubit.dart';
+import '../../logic/orders/orders_cubit.dart';
 import '../../logic/cart/cart_state.dart';
 import '../widgets/bottom_action_bar.dart';
 import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
 import '../widgets/quantity_selector.dart';
 import '../widgets/status_view.dart';
-import '../widgets/surface_card.dart';
 import 'checkout_success_screen.dart';
+import '../widgets/surface_card.dart';
 
 /// Shopping cart: item lines with quantity steppers, live total, checkout.
 class CartScreen extends StatefulWidget {
@@ -173,17 +176,21 @@ class _CheckoutBar extends StatelessWidget {
   final double total;
   final int itemCount;
 
+  // Requires [OrdersCubit] in scope (provided by the app) to record the
+  // completed order; nothing in the cart screen's own build reads it, so the
+  // dependency only surfaces here on the checkout tap.
   void _checkout(BuildContext context) {
     final cubit = context.read<CartCubit>();
-    // Snapshot the order before clearing the cart.
-    final paidTotal = cubit.state.totalPrice;
-    final paidItems = cubit.state.itemsCount;
+    // Snapshot the order before clearing the cart — the success screen and
+    // the order history can't read it back from the (now empty) cart, so the
+    // full item list rides along. pushReplacement swaps the cart for the
+    // confirmation.
+    final order = Order.generate(items: List<CartItem>.of(cubit.state.items));
     cubit.clear();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            CheckoutSuccessScreen(total: paidTotal, itemCount: paidItems),
-      ),
+    context.read<OrdersCubit>().recordOrder(order);
+    context.pushReplacement(
+      '/checkout-success',
+      extra: CheckoutSuccessArgs(order: order),
     );
   }
 

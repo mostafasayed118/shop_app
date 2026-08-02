@@ -395,6 +395,70 @@ void main() {
       ],
     );
 
+    blocTest<ProductsCubit, ProductsState>(
+      'resetCataloguePreferences restores the default configuration',
+      build: () {
+        when(
+          () => repository.getProducts(),
+        ).thenAnswer((_) async => const [product, tee]);
+        return ProductsCubit(repository);
+      },
+      act: (cubit) async {
+        await cubit.loadProducts();
+        cubit.updateQuery('head');
+        cubit.selectCategory('Audio');
+        cubit.setSort(SortField.price, SortDirection.descending);
+        cubit.resetCataloguePreferences();
+      },
+      expect: () => [
+        isA<ProductsLoading>(),
+        isA<ProductsLoaded>(),
+        isA<ProductsLoaded>(),
+        isA<ProductsLoaded>(),
+        isA<ProductsLoaded>(),
+        isA<ProductsLoaded>()
+            .having((state) => state.query, 'query', '')
+            .having((state) => state.selectedCategory, 'category', isNull)
+            .having((state) => state.sortField, 'sortField', SortField.featured)
+            .having(
+              (state) => state.sortDirection,
+              'sortDirection',
+              SortDirection.ascending,
+            )
+            // The products themselves are untouched.
+            .having((state) => state.products, 'products', [product, tee]),
+      ],
+    );
+
+    blocTest<ProductsCubit, ProductsState>(
+      'resetCataloguePreferences is a no-op before products load',
+      build: () {
+        when(
+          () => repository.getProducts(),
+        ).thenAnswer((_) async => const [product]);
+        return ProductsCubit(repository);
+      },
+      act: (cubit) => cubit.resetCataloguePreferences(),
+      expect: () => const [],
+    );
+
+    test('productById resolves ids in the loaded catalogue', () async {
+      when(
+        () => repository.getProducts(),
+      ).thenAnswer((_) async => const [product, tee]);
+      final cubit = ProductsCubit(repository);
+
+      // Before the catalogue loads, no id can resolve (router deep-link guard).
+      expect(cubit.productById('1'), isNull);
+
+      await cubit.loadProducts();
+      expect(cubit.productById('1'), product);
+      expect(cubit.productById('2'), tee);
+      expect(cubit.productById('missing'), isNull);
+
+      await cubit.close();
+    });
+
     test('persists preferences when filters or sort change', () async {
       when(
         () => repository.getProducts(),
@@ -410,6 +474,35 @@ void main() {
       expect(prefs.stored?.query, 'tee');
       expect(prefs.stored?.sortField, SortField.name);
       expect(prefs.stored?.sortDirection, SortDirection.descending);
+
+      await cubit.close();
+    });
+
+    test('resetCataloguePreferences persists the default configuration', () async {
+      when(
+        () => repository.getProducts(),
+      ).thenAnswer((_) async => const [product, tee]);
+      final prefs = _FakePreferencesRepository(
+        const CataloguePreferences(
+          query: 'head',
+          category: 'Audio',
+          sortField: SortField.price,
+          sortDirection: SortDirection.descending,
+        ),
+      );
+      final cubit = ProductsCubit(repository, prefs);
+
+      await cubit.loadProducts(); // applies the saved (non-default) prefs
+      expect((cubit.state as ProductsLoaded).query, 'head');
+
+      cubit.resetCataloguePreferences();
+      await pumpEventQueue();
+
+      // The store now holds the defaults, so a restart restores a clean grid.
+      expect(prefs.stored?.query, '');
+      expect(prefs.stored?.category, isNull);
+      expect(prefs.stored?.sortField, SortField.featured);
+      expect(prefs.stored?.sortDirection, SortDirection.ascending);
 
       await cubit.close();
     });

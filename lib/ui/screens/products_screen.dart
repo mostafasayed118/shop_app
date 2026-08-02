@@ -10,10 +10,12 @@ import '../widgets/owned_snack_bar.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/search_field.dart';
+import '../widgets/settings_button.dart';
 import '../widgets/skeleton_grid.dart';
 import '../widgets/sort_control.dart';
 import '../widgets/status_view.dart';
 import '../widgets/theme_mode_button.dart';
+import '../widgets/wishlist_button.dart';
 
 /// Catalogue home: search + category filters + sorting over a responsive grid,
 /// with explicit loading / error / empty / no-results states.
@@ -35,7 +37,12 @@ class _ProductsScreenState extends State<ProductsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shoply'),
-        actions: const [ThemeModeButton(), CartButton()],
+        actions: const [
+          WishlistButton(),
+          SettingsButton(),
+          ThemeModeButton(),
+          CartButton(),
+        ],
       ),
       body: BlocListener<ProductsCubit, ProductsState>(
         // A failed refresh keeps the grid on screen; surface it as a transient

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_commerce/logic/cart/cart_cubit.dart';
 import 'package:e_commerce/logic/products/products_cubit.dart';
 import 'package:e_commerce/logic/theme/theme_cubit.dart';
+import 'package:e_commerce/logic/wishlist/wishlist_cubit.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/ui/screens/cart_screen.dart';
 import 'package:e_commerce/ui/screens/checkout_success_screen.dart';
@@ -200,6 +201,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -227,6 +229,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -288,6 +291,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -314,6 +318,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -362,6 +367,7 @@ void main() {
             BlocProvider.value(value: productsCubit),
             BlocProvider(create: (_) => CartCubit()),
             BlocProvider(create: (_) => ThemeCubit()),
+            BlocProvider(create: (_) => WishlistCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -406,6 +412,7 @@ void main() {
             BlocProvider.value(value: productsCubit),
             BlocProvider(create: (_) => CartCubit()),
             BlocProvider(create: (_) => ThemeCubit()),
+            BlocProvider(create: (_) => WishlistCubit()),
           ],
           child: MaterialApp(
             theme: buildShopTheme(),
@@ -461,6 +468,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -508,6 +516,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
@@ -544,11 +553,11 @@ void main() {
     await productsCubit.loadProducts();
 
     Widget buildApp(CartCubit cartCubit) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: productsCubit),
-        BlocProvider.value(value: cartCubit),
-        BlocProvider(create: (_) => ThemeCubit()),
-      ],
+      providers: [          BlocProvider.value(value: productsCubit),
+          BlocProvider.value(value: cartCubit),
+          BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
+        ],
       child: MaterialApp(theme: buildShopTheme(), home: const ProductsScreen()),
     );
 
@@ -652,6 +661,7 @@ void main() {
           BlocProvider.value(value: productsCubit),
           BlocProvider(create: (_) => CartCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => WishlistCubit()),
         ],
         child: MaterialApp(
           theme: buildShopTheme(),
