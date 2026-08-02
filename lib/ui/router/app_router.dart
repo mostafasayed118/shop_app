@@ -1,13 +1,12 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
-import '../../logic/products/products_cubit.dart';
 import '../screens/cart_screen.dart';
 import '../screens/checkout_success_screen.dart';
 import '../screens/not_found_screen.dart';
 import '../screens/orders_screen.dart';
 import '../screens/product_detail_screen.dart';
+import '../screens/product_resolver_screen.dart';
 import '../screens/products_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/wishlist_screen.dart';
@@ -29,17 +28,16 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
         path: '/product/:id',
         builder: (context, state) {
           // In-app navigation passes the full product via `extra` so the
-          // detail screen never waits on a lookup. The `:id` path is what
-          // deep links (web) hit, where the catalogue lookup is the fallback.
+          // detail screen never waits on a lookup. A deep link (web) has no
+          // extra: the resolver waits for the catalogue to load rather than
+          // failing while the initial load is still in flight.
           final extra = state.extra;
           if (extra is Product) return ProductDetailScreen(product: extra);
           final id = state.pathParameters['id'];
-          final product =
-              id == null ? null : context.read<ProductsCubit>().productById(id);
-          if (product == null) {
+          if (id == null) {
             return NotFoundScreen(message: 'That product isn\u2019t available.');
           }
-          return ProductDetailScreen(product: product);
+          return ProductResolverScreen(productId: id);
         },
       ),
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),

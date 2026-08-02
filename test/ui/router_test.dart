@@ -17,6 +17,70 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repository that resolves instantly (microtasks only, no timers).
+/// Fails the first load, succeeds afterwards — exercises the deep-link retry
+/// path (catalogue error → "Try again" → product resolves).
+/// Returns a different catalogue on the second load, so a refresh emits a
+/// genuinely new Loaded state (identical ones are swallowed by the cubit) —
+/// used to prove a refresh doesn't rebuild the resolved detail screen.
+class _RefreshingRepository extends ProductRepository {
+  int _calls = 0;
+
+  @override
+  Future<List<Product>> getProducts() async {
+    _calls++;
+    if (_calls == 1) {
+      return const [
+        Product(
+          id: '1',
+          name: 'Aurora Wireless Headphones',
+          description: 'Over-ear headphones.',
+          price: 249.99,
+          imageAsset: 'assets/images/product_1.png',
+          category: 'Audio',
+        ),
+      ];
+    }
+    return const [
+      Product(
+        id: '1',
+        name: 'Aurora Wireless Headphones',
+        description: 'Over-ear headphones.',
+        price: 249.99,
+        imageAsset: 'assets/images/product_1.png',
+        category: 'Audio',
+      ),
+      Product(
+        id: '2',
+        name: 'Pulse Smartwatch',
+        description: 'Always-on display.',
+        price: 199.99,
+        imageAsset: 'assets/images/product_2.png',
+        category: 'Wearables',
+      ),
+    ];
+  }
+}
+
+class _RetryRepository extends ProductRepository {
+  int _calls = 0;
+
+  @override
+  Future<List<Product>> getProducts() async {
+    _calls++;
+    if (_calls == 1) throw Exception('network down');
+    return const [
+      Product(
+        id: '1',
+        name: 'Aurora Wireless Headphones',
+        description: 'Over-ear headphones.',
+        price: 249.99,
+        imageAsset: 'assets/images/product_1.png',
+        category: 'Audio',
+      ),
+    ];
+  }
+}
+
 class _InstantRepository extends ProductRepository {
   @override
   Future<List<Product>> getProducts() async => const [
@@ -96,6 +160,87 @@ void main() {
     expect(find.byType(NotFoundScreen), findsOneWidget);
     expect(find.text('Page not found'), findsOneWidget);
   });
+
+  testWidgets(
+    'a deep link arriving mid-load waits and resolves once the catalogue loads',
+    (tester) async {
+      // The catalogue is deliberately NOT loaded yet when the deep link boots.
+      final productsCubit = ProductsCubit(_InstantRepository());
+      addTearDown(productsCubit.close);
+
+      await tester.pumpWidget(
+        buildApp(productsCubit, initialLocation: '/product/1'),
+      );
+      // A single frame only: the resolver's spinner animates forever, so
+      // pumpAndSettle would time out while it's on screen.
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(ProductDetailScreen), findsNothing);
+      expect(find.byType(NotFoundScreen), findsNothing);
+
+      // The catalogue lands; the resolver swaps the spinner for the detail.
+      await productsCubit.loadProducts();
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductDetailScreen), findsOneWidget);
+      expect(find.text('Aurora Wireless Headphones'), findsWidgets);
+      expect(find.byType(NotFoundScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a deep link with a failed catalogue offers retry, then resolves',
+    (tester) async {
+      final productsCubit = ProductsCubit(_RetryRepository());
+      addTearDown(productsCubit.close);
+
+      await tester.pumpWidget(
+        buildApp(productsCubit, initialLocation: '/product/1'),
+      );
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // The first load attempt fails → a retry-able error view (not "not
+      // found"), because the catalogue itself never loaded.
+      await productsCubit.loadProducts();
+      await tester.pumpAndSettle();
+      expect(find.text('Could not load products'), findsOneWidget);
+      expect(find.byType(NotFoundScreen), findsNothing);
+
+      // Retrying succeeds, and the resolver then opens the product.
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductDetailScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a catalogue refresh after resolving does not reset the detail screen',
+    (tester) async {
+      final productsCubit = ProductsCubit(_RefreshingRepository());
+      await productsCubit.loadProducts(); // first load: single product
+      addTearDown(productsCubit.close);
+
+      await tester.pumpWidget(
+        buildApp(productsCubit, initialLocation: '/product/1'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductDetailScreen), findsOneWidget);
+
+      // Bump the quantity stepper — internal StatefulWidget state that a
+      // rebuild would reset.
+      await tester.tap(find.byIcon(Icons.add).last);
+      await tester.pumpAndSettle();
+      expect(find.text('2'), findsOneWidget);
+
+      // A refresh emits a new Loaded state (different catalogue). The
+      // resolver's buildWhen must suppress the rebuild so the open detail
+      // screen keeps its state.
+      await productsCubit.loadProducts();
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductDetailScreen), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+    },
+  );
 
   testWidgets('an unmatched route shows not found and back to shop returns home', (
     tester,
