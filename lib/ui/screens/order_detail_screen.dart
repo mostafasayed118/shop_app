@@ -4,16 +4,28 @@ import '../../core/utils/money.dart';
 import '../../core/utils/strings.dart';
 import '../../data/models/cart_item.dart';
 import '../../data/models/order.dart';
+import '../widgets/order_reorder.dart';
+import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
 import '../widgets/surface_card.dart';
 
 /// Drill-in view of a single [Order]: a summary header plus a receipt-style
-/// card listing each line item with a grand total. Read-only — orders are a
-/// permanent record.
-class OrderDetailScreen extends StatelessWidget {
+/// card listing each line item with a grand total, and a reorder action that
+/// re-adds the snapshot items to the cart. Orders themselves are a permanent
+/// record — read-only.
+class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key, required this.order});
 
   final Order order;
+
+  @override
+  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends State<OrderDetailScreen>
+    with OwnedSnackBar<OrderDetailScreen>, OrderReorder {
+  @override
+  Order get order => widget.order;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +98,16 @@ class OrderDetailScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Full-width so the primary action on this screen is unmistakable.
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: reorder,
+              icon: const Icon(Icons.replay),
+              label: const Text('Reorder'),
             ),
           ),
         ],

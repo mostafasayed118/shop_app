@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/utils/strings.dart';
 import '../../data/models/order.dart';
-import '../../logic/cart/cart_cubit.dart';
 import '../../logic/orders/orders_cubit.dart';
 import '../../logic/orders/orders_state.dart';
+import '../widgets/order_reorder.dart';
 import '../widgets/owned_snack_bar.dart';
 import '../widgets/price_text.dart';
 import '../widgets/status_view.dart';
@@ -53,16 +53,10 @@ class _OrderCard extends StatefulWidget {
   State<_OrderCard> createState() => _OrderCardState();
 }
 
-class _OrderCardState extends State<_OrderCard> with OwnedSnackBar<_OrderCard> {
+class _OrderCardState extends State<_OrderCard>
+    with OwnedSnackBar<_OrderCard>, OrderReorder {
+  @override
   Order get order => widget.order;
-
-  /// Re-adds the order's snapshot items to the cart. The snapshots are
-  /// self-contained (they embed the full product), so a reorder works even if
-  /// the catalogue has since changed or the product is no longer listed.
-  void _reorder() {
-    context.read<CartCubit>().addItems(order.items);
-    showOwnedToast('${pluralize(order.itemCount, 'item')} added to cart');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +129,7 @@ class _OrderCardState extends State<_OrderCard> with OwnedSnackBar<_OrderCard> {
               // Its own gesture recognizer wins over the card's InkWell, so
               // tapping Reorder never opens the detail screen.
               TextButton.icon(
-                onPressed: _reorder,
+                onPressed: reorder,
                 icon: const Icon(Icons.replay, size: 18),
                 label: const Text('Reorder'),
               ),

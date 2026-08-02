@@ -162,6 +162,58 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('reorder from the order detail screen adds the items to the cart', (
+    tester,
+  ) async {
+    const tee = Product(
+      id: '2',
+      name: 'Breeze Cotton Tee',
+      description: 'Cotton tee.',
+      price: 24.99,
+      imageAsset: 'assets/images/product_7.png',
+      category: 'Apparel',
+    );
+    final ordersCubit = OrdersCubit();
+    ordersCubit.recordOrder(
+      Order(
+        orderNumber: 'SH-123456',
+        placedAt: DateTime(2026, 7, 1),
+        items: const [
+          CartItem(product: _headphones, quantity: 2),
+          CartItem(product: tee, quantity: 1),
+        ],
+      ),
+    );
+    addTearDown(ordersCubit.close);
+
+    final cartCubit = CartCubit();
+    addTearDown(cartCubit.close);
+
+    await tester.pumpWidget(
+      buildApp(ordersCubit, cartCubit: cartCubit),
+    );
+    await tester.pumpAndSettle();
+
+    // Open the detail screen from the card, then reorder from there.
+    await tester.tap(find.text('SH-123456'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OrderDetailScreen), findsOneWidget);
+
+    await tester.tap(find.text('Reorder'));
+    await tester.pump();
+
+    expect(cartCubit.state, const CartState(items: [
+      CartItem(product: _headphones, quantity: 2),
+      CartItem(product: tee, quantity: 1),
+    ]));
+    expect(find.text('3 items added to cart'), findsOneWidget);
+    // Still on the detail screen — reorder doesn't navigate.
+    expect(find.byType(OrderDetailScreen), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('a completed checkout lands in order history', (tester) async {
     // A realistic phone viewport so the grid, cart and checkout are usable.
     tester.view.physicalSize = const Size(390, 844);
